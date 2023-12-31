@@ -8,12 +8,12 @@
 struct log {
 	char gate;
 	char val;
-	char type;
+	log_type type;
 	std::string var_name;
 	ptr_linked_list<log> args;
 
 	log();
-	log(char c, char t);
+	log(char c, log_type t);
 	log(std::string v);
 	~log();
 
@@ -27,6 +27,7 @@ struct log {
 	bool xorify();
 	log* invert();
 	bool polarity();
+	bool can_xor(log* l);
 };
 
 #endif
