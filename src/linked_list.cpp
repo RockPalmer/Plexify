@@ -26,13 +26,17 @@ template <class T> linked_list<T>::~linked_list() {
 	}
 }
 template <class T> void linked_list<T>::destruct() {
+	node<T>* n = head;
 	for (int i = 0; i < length; i++) {
-		delete get(i);
+		delete n->data;
+		n = n->next;
 	}
 }
 template <class T> void linked_list<T>::destruct_arr() {
+	node<T>* n = head;
 	for (int i = 0; i < length; i++) {
-		delete[] get(i);
+		delete[] n->data;
+		n = n->next;
 	}
 }
 template <class T> std::string linked_list<T>::to_string() {
@@ -57,7 +61,7 @@ template <class T> std::string linked_list<T>::to_string() {
 	}
 	return result;
 }
-template <class T> void linked_list<T>::set(int index, T element) {
+template <class T> void linked_list<T>::set(int index, T element, int type) {
 	if (index < length) {
 		int start = length - index;
 		node<T>* temp;
@@ -73,6 +77,14 @@ template <class T> void linked_list<T>::set(int index, T element) {
 			for (int i = length - 1; i > index; i--) {
 				temp = temp->prev;
 			}
+		}
+		switch (type) {
+			case 1:
+				delete temp->data;
+				break;
+			case 2:
+				delete[] temp->data;
+				break;
 		}
 		temp->data = element;
 	}
@@ -122,11 +134,19 @@ template <class T> void linked_list<T>::insert(int index, T element) {
 		length++;
 	}
 }
-template <class T> void linked_list<T>::remove(int index) {
+template <class T> void linked_list<T>::remove(int index, int type) {
 	if (index < length) {
 		node<T>* temp;
 		int start;
 		if (head == tail && head != nullptr) {
+			switch (type) {
+				case 1:
+					delete head->data;
+					break;
+				case 2:
+					delete[] head->data;
+					break;
+			}
 			delete head;
 			head = nullptr;
 			tail = head;
@@ -156,6 +176,14 @@ template <class T> void linked_list<T>::remove(int index) {
 				}
 				temp->next->prev = temp->prev;
 				temp->prev->next = temp->next;
+			}
+			switch (type) {
+				case 1:
+					delete temp->data;
+					break;
+				case 2:
+					delete[] temp->data;
+					break;
 			}
 			delete temp;
 		}
