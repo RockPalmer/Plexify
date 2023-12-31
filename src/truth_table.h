@@ -9,22 +9,10 @@
 #include "linked_list.h"
 #include "log.h"
 
-using namespace std;
-
-struct instruction {
-	string output;
-	bool is_choice;
-	instruction* choice[2];
-
-	instruction();
-
-	~instruction();
-};
-
 class truth_table {
 public:
-	string* inputs;
-	string* outputs;
+	std::string* inputs;
+	std::string* outputs;
 	char** inputTable;
 	char** outputTable;
 	int numInputs;
@@ -32,30 +20,32 @@ public:
 	int tableHeight;
 
 	truth_table();
-	truth_table(string* inp, string* outp, char** inpTab, char** outpTab, int numInp, int numOutp, int tabHeight);
-	truth_table(string filename);
+	truth_table(std::string* inp, std::string* outp, char** inpTab, char** outpTab, int numInp, int numOutp, int tabHeight);
+	truth_table(std::string filename);
 	~truth_table();
 
-	linked_list<char*>* get_cases_where(string var, char val);
+	linked_list<char*>* get_cases_where(std::string var, char val);
+	log* get_sum_of_products(std::string var);
+	log* get_product_of_sums(std::string var);
+	log* convert_to_log(linked_list<char*>* l, bool is_sop = true);
+	void reduce(linked_list<char*>* l);
 
-	int indexOfOutput(string var);
-	string to_string();
+	int indexOfOutput(std::string var);
 };
 
+std::ostream& operator<<(std::ostream& out, truth_table& t);
 
 bool same(char* op1, char* op2, int len);
-int find_longest_length_str(string* list, int length, int curr_largest);
-string get_block(string str, int width);
-string get_block(char c, int width);
+int find_longest_length_str(std::string* list, int length, int curr_largest);
+std::string get_block(std::string str, int width);
+std::string get_block(char c, int width);
 
 bool contains(char* container, char* containee, int len);
 int containsExcept(char* container, char* containee, int len);
 int sameExcept(char* op1, char* op2, int len);
 int count_valid(char* vals, int len);
-log* convert_to_log(linked_list<char*>* l, truth_table& t);
 
 bool find_same_except(linked_list<char*>* l, int num_i);
 bool find_contains_except(linked_list<char*>* l, int num_i);
-void reduce(linked_list<char*>* l, int len);
 
 #endif
