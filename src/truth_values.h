@@ -15,14 +15,10 @@
 #define LO '0'
 #define DC 'x'
 
-/*#define OPEN_EXP '('
-#define CLOSE_EXP ')'
-
-#define AND_OP '&'
-#define OR_OP '|'
-#define XOR_OP '^'
-#define INV_OP '~'
-#define MUX_OP_1 '?'
-#define MUX_OP_2 ':'*/
+enum log_type {
+	LITERAL = 1,
+	VARIABLE = 2,
+	EXPRESSION = 3
+};
 
 #endif
