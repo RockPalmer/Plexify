@@ -29,9 +29,9 @@ public:
 
 	std::string to_string();
 
-	void set(int index, T element);
+	void set(int index, T element, int type = 0);
 	void insert(int index, T element);
-	void remove(int index);
+	void remove(int index, int type = 0);
 	void append(T element);
 	void prepend(T element);
 	T get(int index);
