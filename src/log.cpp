@@ -1,19 +1,19 @@
 log::log() {
 	gate = NONE;
 	val = DC;
-	type = 0;
+	type = LITERAL;
 	var_name = "";
 }
 
-log::log(char c, char t) {
+log::log(char c, log_type t) {
 	type = t;
 	var_name = "";
 	switch (t) {
-		case 1:
+		case LITERAL:
 			gate = NONE;
 			val = c;
 			break;
-		case 3:
+		case EXPRESSION:
 			gate = c;
 			val = DC;
 			break;
@@ -23,7 +23,7 @@ log::log(char c, char t) {
 log::log(std::string v) {
 	gate = NONE;
 	val = DC;
-	type = 2;
+	type = VARIABLE;
 	var_name = v;
 }
 
@@ -34,17 +34,17 @@ std::string log::to_string() {
 	std::string op_str = "";
 	log* temp = nullptr;
 	switch (type) {
-		case 1:
+		case LITERAL:
 			if (val == HI) {
 				result = "1";
 			} else {
 				result = "0";
 			}
 			break;
-		case 2:
+		case VARIABLE:
 			result = var_name;
 			break;
-		case 3:
+		case EXPRESSION:
 			if (gate == NOT) {
 				temp = args.head->data;
 				if (temp->type == 3) {
@@ -70,7 +70,7 @@ std::string log::to_string() {
 					if (i != 0) {
 						result = result + op_str;
 					}
-					if (temp->type == 3) {
+					if (temp->type == EXPRESSION) {
 						if (n->data->polarity()) {
 							result = result + "(" + temp->to_string() + ")";
 						} else {
@@ -96,13 +96,13 @@ bool log::equal_to(log* l) {
 		bool* temp1;
 		int temp2;
 		switch (type) {
-			case 1:
+			case LITERAL:
 				return (val == l->val);
 				break;
-			case 2:
+			case VARIABLE:
 				return (var_name.compare(l->var_name) == 0);
 				break;
-			case 3:
+			case EXPRESSION:
 				if (gate == l->gate) {
 					if (args.length == l->args.length) {
 						n = args.head;
@@ -130,22 +130,22 @@ log* log::invert() {
 	std::string temp = "";
 	r->copy(this);
 	switch (r->type) {
-		case 1:
+		case LITERAL:
 			if (r->val == HI) {
 				r->val = LO;
 			} else if (r->val == LO) {
 				r->val = HI;
 			}
 			break;
-		case 2:
+		case VARIABLE:
 			temp = r->var_name;
 			delete r;
-			r = new log(NOT,3);
+			r = new log(NOT,EXPRESSION);
 			s = new log(temp);
 			r->args.append(s);
 			delete s;
 			break;
-		case 3:
+		case EXPRESSION:
 			if (r->gate == NOT) {
 				temp = r->args.head->data->var_name;
 				delete r;
@@ -164,13 +164,13 @@ log* log::invert() {
 bool log::polarity() {
 	bool result = false;
 	switch (type) {
-		case 1:
+		case LITERAL:
 			result = (val == HI);
 			break;
-		case 2:
+		case VARIABLE:
 			result = true;
 			break;
-		case 3:
+		case EXPRESSION:
 			if (gate == MUX) {
 				result = true;
 			} else {
@@ -184,7 +184,7 @@ bool log::polarity() {
 ptr_node<log>* log::strict_contains(log* l) {
 	ptr_node<log>* result = nullptr;
 
-	if (type == 3) {
+	if (type == EXPRESSION) {
 		ptr_node<log>* n = args.head;
 		while (n != nullptr && !result) {
 			if (n->data->equal_to(l)) {
@@ -199,8 +199,8 @@ ptr_node<log>* log::strict_contains(log* l) {
 
 bool log::contains(log* l, bool*& elements,int& len) {
 	len = -1;
-	if (type == 3) {
-		if (l->type == 3 && l->gate == gate && l->args.length < args.length && gate >= AND && gate <= XNOR) {
+	if (type == EXPRESSION) {
+		if (l->type == EXPRESSION && l->gate == gate && l->args.length < args.length && gate >= AND && gate <= XNOR) {
 			elements = new bool[args.length];
 			len = args.length;
 
@@ -316,21 +316,21 @@ void log::copy(log* l) {
 bool log::demorgify() {
 	int num_hi = 0;
 	int num_lo = 0;
-	if (type == 3 && gate != MUX) {
+	if (type == EXPRESSION && gate != MUX) {
 		ptr_node<log>* n = args.head;
 		while (n != nullptr) {
 			switch (n->data->type) {
-				case 1:
+				case LITERAL:
 					if (n->data->val == HI) {
 						num_hi++;
 					} else if (n->data->val == LO) {
 						num_lo++;
 					}
 					break;
-				case 2:
+				case VARIABLE:
 					num_hi++;
 					break;
-				case 3:
+				case EXPRESSION:
 					if (n->data->gate == NOT) {
 						num_lo++;
 					} else {
@@ -355,12 +355,12 @@ bool log::demorgify() {
 			std::string name = "";
 			while (n != nullptr) {
 				switch (n->data->type) {
-					case 1:
+					case LITERAL:
 						if (n->data->val == LO) {
 							n->data->val = HI;
 						}
 						break;
-					case 3:
+					case EXPRESSION:
 						if (n->data->gate == NOT) {
 							name = n->data->args.head->data->var_name;
 							delete n->data;
@@ -389,20 +389,20 @@ bool log::demorgify() {
 				std::string name = "";
 				while (n != nullptr) {
 					switch (n->data->type) {
-						case 1:
+						case LITERAL:
 							if (n->data->val == HI) {
 								n->data->val = LO;
 							} else if (n->data->val == LO) {
 								n->data->val = HI;
 							}
 							break;
-						case 2:
+						case VARIABLE:
 							name = n->data->var_name;
 							delete n->data;
-							n->data = new log(NOT,3);
+							n->data = new log(NOT,EXPRESSION);
 							n->data->args.append(new log(name));
 							break;
-						case 3:
+						case EXPRESSION:
 							if (n->data->gate == NOT) {
 								name = n->data->args.head->data->var_name;
 								delete n->data;
@@ -439,9 +439,9 @@ bool log::demorgify() {
 				return true;
 			}
 		}
-	} else if (type == 2) {
+	} else if (type == VARIABLE) {
 		return true;
-	} else if (type == 1) {
+	} else if (type == LITERAL) {
 		if (val == HI) {
 			return true;
 		} else if (val == LO) {
@@ -454,12 +454,10 @@ bool log::demorgify() {
 bool log::xorify() {
 	if (gate == OR || gate == NOR) {
 		ptr_node<log>* n = args.head;
+		bool ands[args.length];
 
-		int len = args.length;
-		bool ands[len];
-
-		for (int i = 0; i < len; i++) {
-			if (n->data->type == 3 && n->data->gate == AND) {
+		for (int i = 0; i < args.length; i++) {
+			if (n->data->type == EXPRESSION && n->data->gate == AND) {
 				ands[i] = true;
 			} else {
 				ands[i] = false;
@@ -467,22 +465,33 @@ bool log::xorify() {
 			n = n->next;
 		}
 
-		bool same_elements[2][len];
-
+		ptr_node<log>* match1;
+		ptr_node<log>* match2;
 		n = args.head;
-		ptr_node<log>* m;
-		for (int i = 0; i < len; i++) {
-			if (ands[i]) {
-				m = n->next;
-				for (int j = i + 1; j < len; j++) {
-					if (ands[j]) {
-
-					}
-				}
-			}
-		}
+		bool found = false;
 	} else {
 		return false;
 	}
 	return true;
+}
+
+bool log::can_xor(log* l) {
+	bool can = false;
+
+	if (contains_same_elements(l)) {
+		can = true;
+		int num_diff = 0;
+		ptr_node<log>* n = args.head;
+		for (int i = 0; i < args.length && can; i++) {
+			if (polarity() ^ n->data->polarity()) {
+				if (num_diff >= 2) {
+					can = false;
+				} else {
+					num_diff++;
+				}
+			}
+		}
+	}
+
+	return can;
 }
