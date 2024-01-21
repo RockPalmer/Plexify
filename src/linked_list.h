@@ -17,7 +17,7 @@ template <class T> struct node {
 
 template <class T> class linked_list {
 public:
-	int length;
+	size_t length;
 	node<T>* head;
 	node<T>* tail;
 
@@ -29,12 +29,15 @@ public:
 
 	std::string to_string();
 
-	void set(int index, T element, int type = 0);
-	void insert(int index, T element);
-	void remove(int index, int type = 0);
+	void set(size_t index, T element, int type = 0);
+	void insert(size_t index, T element);
+	void remove(size_t index, int type = 0);
+	void pop(node<T>* n);
+	node<T>* pop();
 	void append(T element);
+	void append(node<T>* n);
 	void prepend(T element);
-	T get(int index);
+	T get(size_t index);
 };
 
 #endif
