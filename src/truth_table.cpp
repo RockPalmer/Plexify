@@ -373,77 +373,121 @@ void truth_table::load(std::string filename) {
 			// Open file
 			file.open(filename, std::ios::in);
 
-			size_t outIndex = 0;
+			size_t xIndex = 0;
 			size_t yIndex = 0;
+			size_t index1 = 0;
 			size_t tempHeight = 0;
-			while (!file.eof()) { 
+			std::string element = "";
+
+			if (file.eof()) {
+				file.close();
+				throw new pgm_error(NOT_ENOUGH_ROWS,0,0);
+			} else {
 				getline(file,line);
-				switch (yIndex) {
-					case 0:
-						if (line.find(string_mapping[INPUT_MAP])) {
+			}
+			size_t index2 = line.find(string_mapping[DELIM_MAP]);
+
+			while (true) {
+				if (index2 == std::string::npos) {
+					element = trim(line.substr(index1,line.length() - index1));
+					if (element.compare(string_mapping[OUTPUT_MAP]) != 0) {
+						file.close();
+						pgm_error* pg = new pgm_error(NOT_FOUND,0,1);
+						pg->str_args[0] = string_mapping[OUTPUT_MAP];
+						throw pg;
+					} else {
+						break;
+					}
+				}
+				element = trim(line.substr(index1,index2 - index1));
+				if (index1 != 0) {
+					if (element.compare(string_mapping[OUTPUT_MAP]) == 0) {
+						break;
+					} else if (element.compare("") == 0) {
+						if (numInputs == max_inputs) {
 							file.close();
-							pgm_error* pg = new pgm_error(NOT_FOUND,0,1);
-							pg->str_args[0] = string_mapping[INPUT_MAP];
-						}
-						outIndex = line.find(string_mapping[OUTPUT_MAP]);
-						if (outIndex == std::string::npos) {
-							file.close();
-							pgm_error* pg = new pgm_error(NOT_FOUND,0,1);
-							pg->str_args[0] = string_mapping[OUTPUT_MAP];
-						}
-						for (size_t i = 0; i < line.length(); i++) {
-							if (line[i] == string_mapping[DELIM_MAP][0]) {
-								if (i < outIndex) {
-									if (numInputs == max_inputs) {
-										file.close();
-										pgm_error* pg = new pgm_error(TOO_MANY_INPUTS,1,0);
-										pg->setSizeArgs(0);
-										throw pg;
-									} else {
-										numInputs++;
-									}
-								} else {
-									if (numOutputs == SIZE_MAX) {
-										file.close();
-										pgm_error* pg = new pgm_error(TOO_MANY_OUTPUTS,1,0);
-										pg->setSizeArgs(0);
-										throw pg;
-									} else {
-										numOutputs++;
-									}
-								}
-							}
-						}
-						numOutputs++;
-						if (numInputs) {
-							if (!numOutputs) {
-								file.close();
-								pgm_error* pg = new pgm_error(NOT_ENOUGH_OUTPUTS,1,0);
-								pg->setSizeArgs(0);
-								throw pg;
-							}
-						} else {
-							file.close();
-							pgm_error* pg = new pgm_error(NOT_ENOUGH_INPUTS,1,0);
+							pgm_error* pg = new pgm_error(TOO_MANY_INPUTS,1,0);
 							pg->setSizeArgs(0);
 							throw pg;
+						} else {
+							numInputs++;
 						}
-						break;
-					case 1:
-						tempHeight = 1 << numInputs;
-						break;
-					default:
-						if (line.compare("") != 0) {
-							if (tableHeight == tempHeight) {
-								file.close();
-								throw new pgm_error(TOO_MANY_ROWS,0,0);
-							} else {
-								tableHeight++;
-							}
-						}
-						break;
+					} else {
+						file.close();
+						pgm_error* pg = new pgm_error(UNRECOGNIZED_CHAR,1,1);
+						pg->setSizeArgs(index1);
+						pg->str_args[0] = line;
+						throw pg;
+					}
+				} else {
+					if (element.compare(string_mapping[INPUT_MAP]) != 0) {
+						file.close();
+						pgm_error* pg = new pgm_error(NOT_FOUND,0,1);
+						pg->str_args[0] = string_mapping[INPUT_MAP];
+						throw pg;
+					} else {
+						numInputs++;
+					}
 				}
-				yIndex++;
+				index1 = index2 + 1;
+				index2 = line.find(string_mapping[DELIM_MAP],index1);
+			}
+			tempHeight = 1 << numInputs;
+
+			if (file.eof()) {
+				throw new pgm_error(NOT_ENOUGH_ROWS,0,0);
+			} else {
+				getline(file,line);
+			}
+
+			index1 = 0;
+			index2 = line.find(string_mapping[DELIM_MAP]);
+			xIndex = 0;
+			while (true) {
+				if (index2 == std::string::npos) {
+					if (xIndex < numInputs) {
+						file.close();
+						pgm_error* pg = new pgm_error(NOT_ENOUGH_INPUTS,1,0);
+						pg->setSizeArgs(1);
+						throw pg;
+					} else {
+						break;
+					}
+				}
+				if (xIndex >= numInputs) {
+					if (numOutputs == SIZE_MAX) {
+						file.close();
+						pgm_error* pg = new pgm_error(TOO_MANY_OUTPUTS,1,0);
+						pg->setSizeArgs(1);
+						throw pg;
+					} else {
+						numOutputs++;
+					}
+				}
+				xIndex++;
+				index1 = index2 + 1;
+				index2 = line.find(string_mapping[DELIM_MAP],index1);
+			}
+			if (numOutputs == SIZE_MAX) {
+				file.close();
+				pgm_error* pg = new pgm_error(TOO_MANY_OUTPUTS,1,0);
+				pg->setSizeArgs(1);
+				throw pg;
+			} else {
+				numOutputs++;
+			}
+
+			while (!(file.eof())) { 
+				getline(file,line);
+				line = trim(line);
+				if (line.compare("") != 0) {
+					if (tableHeight == tempHeight) {
+						file.close();
+						throw new pgm_error(TOO_MANY_ROWS,0,0);
+					} else {
+						tableHeight++;
+					}
+				}
 			}
 
 			// Close file
@@ -479,7 +523,7 @@ void truth_table::load(std::string filename) {
 						throw pg;
 					} else {
 						if (element.compare("") != 0) {
-							inputs[xIndex - numInputs] = element;
+							outputs[xIndex - numInputs] = element;
 						} else {
 							file.close();
 							throw new pgm_error(MISSING_ARG,0,0);
