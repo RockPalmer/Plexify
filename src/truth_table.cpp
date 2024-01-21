@@ -7,7 +7,7 @@ truth_table::truth_table() {
 	numOutputs = 0;
 	tableHeight = 0;
 }
-truth_table::truth_table(std::string* inp, std::string* outp, char** inpTab, char** outpTab, int numInp, int numOutp, int tabHeight = -1) {
+truth_table::truth_table(std::string* inp, std::string* outp, char** inpTab, char** outpTab, size_t numInp, size_t numOutp, size_t tabHeight = -1) {
 	inputs = inp;
 	outputs = outp;
 	inputTable = inpTab;
@@ -17,112 +17,7 @@ truth_table::truth_table(std::string* inp, std::string* outp, char** inpTab, cha
 	tableHeight = (tabHeight == -1)?(1 << numInp):(tabHeight);
 }
 truth_table::truth_table(std::string filename) {
-	std::ifstream file;
-	std::string line;
-	int yIndex = 0;
-	int xIndex = 0;
-	int outIndex = 0;
-	int max = 0;
-	bool inpu = true;
-	bool vals = false;
-	std::string var = "";
-
-	numInputs = 0;
-	numOutputs = 0;
-	tableHeight = 0;
-
-	file.open(filename, std::ios::in);
-
-	while (!file.eof()) { 
-		getline(file,line);
-		if (yIndex == 0) {
-			outIndex = line.find("Outputs");
-			for (int i = 0; i < line.length(); i++) {
-				if (line[i] == ',') {
-					if (i < outIndex) {
-						numInputs++;
-					} else {
-						numOutputs++;
-					}
-				}
-			}
-			numOutputs++;
-		} else if (yIndex >= 2) {
-			tableHeight++;
-		}
-		yIndex++;
-	}
-	file.close();
-
-	inputs = new std::string[numInputs];
-	outputs = new std::string[numOutputs];
-	inputTable = new char*[tableHeight];
-	outputTable = new char*[tableHeight];
-
-	for (int i = 0; i < tableHeight; i++) {
-		inputTable[i] = new char[numInputs];
-		outputTable[i] = new char[numOutputs];
-	}
-
-	file.open(filename, std::ios::in);
-	yIndex = 0;
-	while (!file.eof()) {
-		xIndex = 0;
-		inpu = true;
-		getline(file,line);
-		if (yIndex == 0 && !vals) {
-			for (int i = 0; i < line.length(); i++) {
-				if (line[i] == ',') {
-					xIndex++;
-				} else {
-					if (i == outIndex) {
-						outIndex = xIndex;
-					}
-				}
-			}
-		} else if (yIndex == 1 && !vals) {
-			for (int i = 0; i < line.length(); i++) {
-				if (line[i] == ',' || i == line.length() - 1) {
-					if (xIndex < outIndex && inpu) {
-						inputs[xIndex] = var;
-					} else {
-						if (inpu) {
-							inpu = false;
-							xIndex = 0;
-						}
-						outputs[xIndex] = var;
-					}
-					var = "";
-					xIndex++;
-				} else {
-					var += line[i];
-				}
-				if (i == line.length() - 1) {
-					outputs[numOutputs - 1] += line[i];
-				}
-			}
-		} else {
-			if (!vals) {
-				vals = true;
-				yIndex = 0;
-			}
-			for (int i = 0; i < line.length(); i++) {
-				if (line[i] != ',') {
-					if (xIndex < outIndex && inpu) {
-						inputTable[yIndex][xIndex] = line[i];
-					} else {
-						if (inpu) {
-							inpu = false;
-							xIndex = 0;
-						}
-						outputTable[yIndex][xIndex] = line[i];
-					}
-					xIndex++;
-				}
-			}
-		}
-		yIndex++;
-	}
+	load(filename);
 }
 truth_table::~truth_table() {
 	if (inputs != nullptr) {
@@ -132,7 +27,7 @@ truth_table::~truth_table() {
 		delete[] outputs;
 	}
 	if (inputTable != nullptr) {
-		for (int i = 0; i < tableHeight; i++) {
+		for (size_t i = 0; i < tableHeight; i++) {
 			if (inputTable[i] != nullptr) {
 				delete[] inputTable[i];
 			}
@@ -140,7 +35,7 @@ truth_table::~truth_table() {
 		delete[] inputTable;
 	}
 	if (outputTable != nullptr) {
-		for (int i = 0; i < tableHeight; i++) {
+		for (size_t i = 0; i < tableHeight; i++) {
 			if (outputTable[i] != nullptr) {
 				delete[] outputTable[i];
 			}
@@ -151,11 +46,11 @@ truth_table::~truth_table() {
 
 linked_list<char*>* truth_table::get_cases_where(std::string var, char val) {
 	linked_list<char*>* l = new linked_list<char*>();
-	int index = indexOfOutput(var);
-	for (int i = 0; i < tableHeight; i++) {
+	size_t index = indexOfOutput(var);
+	for (size_t i = 0; i < tableHeight; i++) {
 		if (outputTable[i][index] == val) {
 			l->append(new char[numInputs]);
-			for (int j = 0; j < numInputs; j++) {
+			for (size_t j = 0; j < numInputs; j++) {
 				l->tail->data[j] = inputTable[i][j];
 			}
 		}
@@ -163,23 +58,31 @@ linked_list<char*>* truth_table::get_cases_where(std::string var, char val) {
 	return l;
 }
 log* truth_table::get_sum_of_products(std::string var) {
-	linked_list<char*>* cases = get_cases_where(var,HI);
-	reduce(cases);
-	log* l = convert_to_log(cases);
-	cases->destruct_arr();
-	delete cases;
+	linked_list<char*>* hi_cases = get_cases_where(var,HI);
+	linked_list<char*>* dc_cases = get_cases_where(var,DC);
+	expand(dc_cases);
+	reduce(hi_cases,dc_cases);
+	log* l = convert_to_log(hi_cases);
+	hi_cases->destruct_arr();
+	dc_cases->destruct_arr();
+	delete hi_cases;
+	delete dc_cases;
 	return l;
 }
 log* truth_table::get_product_of_sums(std::string var) {
-	linked_list<char*>* cases = get_cases_where(var,LO);
-	reduce(cases);
-	log* l = convert_to_log(cases,false);
-	cases->destruct_arr();
-	delete cases;
+	linked_list<char*>* lo_cases = get_cases_where(var,LO);
+	linked_list<char*>* dc_cases = get_cases_where(var,DC);
+	expand(dc_cases);
+	reduce(lo_cases,dc_cases);
+	log* l = convert_to_log(lo_cases);
+	lo_cases->destruct_arr();
+	dc_cases->destruct_arr();
+	delete lo_cases;
+	delete dc_cases;
 	return l;
 }
-int truth_table::indexOfOutput(std::string var) {
-	for (int i = 0; i < numOutputs; i++) {
+size_t truth_table::indexOfOutput(std::string var) {
+	for (size_t i = 0; i < numOutputs; i++) {
 		if (var.compare(outputs[i]) == 0) {
 			return i;
 		}
@@ -189,38 +92,38 @@ int truth_table::indexOfOutput(std::string var) {
 std::ostream& operator<<(std::ostream& out, truth_table& t) {
 
 	// Get proper formatting width
-	int len = find_longest_length_str(t.inputs,t.numInputs,0);
+	size_t len = find_longest_length_str(t.inputs,t.numInputs,0);
 	len = find_longest_length_str(t.outputs,t.numOutputs,len) + 1;
 
 	// Print the input variables
-	for (int i = 0; i < t.numInputs; i++) {
+	for (size_t i = 0; i < t.numInputs; i++) {
 		out << get_block(t.inputs[i],len);
 	}
 	out << "|";
 
 	// Print the output variables
-	for (int i = 0; i < t.numOutputs; i++) {
+	for (size_t i = 0; i < t.numOutputs; i++) {
 		out << get_block(t.outputs[i],len);
 	}
 	out << std::endl;
 
-	int tab_width = t.numInputs * len;
-	for (int i = 0; i < tab_width; i++) {
+	size_t tab_width = t.numInputs * len;
+	for (size_t i = 0; i < tab_width; i++) {
 		out << '-';
 	}
 	tab_width = t.numOutputs * len;
 	out << '|';
-	for (int i = 0; i < tab_width; i++) {
+	for (size_t i = 0; i < tab_width; i++) {
 		out << '-';
 	}
 	out << std::endl;
 	
-	for (int i = 0; i < t.tableHeight; i++) {
-		for (int j = 0; j < t.numInputs; j++) {
+	for (size_t i = 0; i < t.tableHeight; i++) {
+		for (size_t j = 0; j < t.numInputs; j++) {
 			out << get_block(t.inputTable[i][j],len);
 		}
 		out << '|';
-		for (int j = 0; j < t.numOutputs; j++) {
+		for (size_t j = 0; j < t.numOutputs; j++) {
 			out << get_block(t.outputTable[i][j],len);
 		}
 		out << std::endl;
@@ -248,7 +151,7 @@ log* truth_table::convert_to_log(linked_list<char*>* l, bool is_sop) {
 					result->type = LITERAL;
 					break;
 				case 1: // Only one input is specified -> result = "var" || temp1 = "var", result = NOT(temp1)
-					for (int i = 0; i < numInputs; i++) {
+					for (size_t i = 0; i < numInputs; i++) {
 						if (l->get(0)[i] != DC) { // Input at i is set -> add this input
 							result = new log();
 							if (is_sop) {
@@ -286,7 +189,7 @@ log* truth_table::convert_to_log(linked_list<char*>* l, bool is_sop) {
 					result = new log();
 					result->type = EXPRESSION;
 					result->gate = is_sop?AND:OR;
-					for (int i = 0; i < numInputs; i++) {
+					for (size_t i = 0; i < numInputs; i++) {
 						if (l->get(0)[i] != DC) { // Input i is set -> add this input
 							if (is_sop) {
 								if (l->get(0)[i] == HI) { // Input i is set HI -> temp1 = "var", result &= temp1
@@ -336,7 +239,7 @@ log* truth_table::convert_to_log(linked_list<char*>* l, bool is_sop) {
 			result = new log();
 			result->gate = is_sop?OR:NAND;
 			result->type = EXPRESSION;
-			for (int i = 0; i < l->length; i++) {
+			for (size_t i = 0; i < l->length; i++) {
 				switch (count_valid(l->get(i),numInputs)) {
 					case 0: // current case has no inputs set -> temp1 = HI, result |= temp1
 						temp1 = new log();
@@ -346,11 +249,12 @@ log* truth_table::convert_to_log(linked_list<char*>* l, bool is_sop) {
 						delete temp1;
 						break;
 					case 1: // current case has only one input set -> temp1 = "var", result |= temp1 || temp2 = "var", temp1 = NOT(temp2), result |= temp1
-						for (int j = 0; j < numInputs; j++) {
+						for (size_t j = 0; j < numInputs; j++) {
 							if (l->get(i)[j] != DC) { // Input j is set -> add this input
 								if (is_sop) {
 									if (l->get(i)[j] == HI) { // Input j is set HI -> temp1 = "var", result &= temp1
 										temp1 = new log();
+										temp1->gate = NONE;
 										temp1->type = VARIABLE;
 										temp1->var_name = inputs[j];
 										result->args.append(temp1);
@@ -395,7 +299,7 @@ log* truth_table::convert_to_log(linked_list<char*>* l, bool is_sop) {
 						temp1 = new log();
 						temp1->type = EXPRESSION;
 						temp1->gate = is_sop?AND:OR;
-						for (int j = 0; j < numInputs; j++) {
+						for (size_t j = 0; j < numInputs; j++) {
 							if (l->get(i)[j] != DC) { // Input j is set -> add this input
 								if (is_sop) {
 									if (l->get(i)[j] == HI) { // Input j is set HI -> temp2 = "var", temp1 &= temp2
@@ -448,13 +352,525 @@ log* truth_table::convert_to_log(linked_list<char*>* l, bool is_sop) {
 
 	return result;
 }
-void truth_table::reduce(linked_list<char*>* l) {
-	while (find_same_except(l,numInputs) || find_contains_except(l,numInputs));
+void truth_table::load(std::string filename) {
+	try {
+		/* Reset values */
+		destruct();
+
+		/* Define maximum allowed inputs */
+		size_t g = SIZE_MAX;
+		size_t max_inputs = 0;
+		while (g) {
+			max_inputs++;
+			g >>= 1;
+		}
+
+		std::ifstream file;
+		std::string line;
+
+		/* Define table size */
+		{
+			// Open file
+			file.open(filename, std::ios::in);
+
+			size_t outIndex = 0;
+			size_t yIndex = 0;
+			size_t tempHeight = 0;
+			while (!file.eof()) { 
+				getline(file,line);
+				switch (yIndex) {
+					case 0:
+						if (line.find(string_mapping[INPUT_MAP])) {
+							file.close();
+							pgm_error* pg = new pgm_error(NOT_FOUND,0,1);
+							pg->str_args[0] = string_mapping[INPUT_MAP];
+						}
+						outIndex = line.find(string_mapping[OUTPUT_MAP]);
+						if (outIndex == std::string::npos) {
+							file.close();
+							pgm_error* pg = new pgm_error(NOT_FOUND,0,1);
+							pg->str_args[0] = string_mapping[OUTPUT_MAP];
+						}
+						for (size_t i = 0; i < line.length(); i++) {
+							if (line[i] == string_mapping[DELIM_MAP][0]) {
+								if (i < outIndex) {
+									if (numInputs == max_inputs) {
+										file.close();
+										pgm_error* pg = new pgm_error(TOO_MANY_INPUTS,1,0);
+										pg->setSizeArgs(0);
+										throw pg;
+									} else {
+										numInputs++;
+									}
+								} else {
+									if (numOutputs == SIZE_MAX) {
+										file.close();
+										pgm_error* pg = new pgm_error(TOO_MANY_OUTPUTS,1,0);
+										pg->setSizeArgs(0);
+										throw pg;
+									} else {
+										numOutputs++;
+									}
+								}
+							}
+						}
+						numOutputs++;
+						if (numInputs) {
+							if (!numOutputs) {
+								file.close();
+								pgm_error* pg = new pgm_error(NOT_ENOUGH_OUTPUTS,1,0);
+								pg->setSizeArgs(0);
+								throw pg;
+							}
+						} else {
+							file.close();
+							pgm_error* pg = new pgm_error(NOT_ENOUGH_INPUTS,1,0);
+							pg->setSizeArgs(0);
+							throw pg;
+						}
+						break;
+					case 1:
+						tempHeight = 1 << numInputs;
+						break;
+					default:
+						if (line.compare("") != 0) {
+							if (tableHeight == tempHeight) {
+								file.close();
+								throw new pgm_error(TOO_MANY_ROWS,0,0);
+							} else {
+								tableHeight++;
+							}
+						}
+						break;
+				}
+				yIndex++;
+			}
+
+			// Close file
+			file.close();
+		}
+
+		if (tableHeight == 0) {
+			throw new pgm_error(NOT_ENOUGH_ROWS,0,0);
+		}
+
+		/* Set up input and output variables */
+		{
+			// Reopen file
+			file.open(filename, std::ios::in);
+			getline(file,line);
+			getline(file,line);
+
+			// Allocate variable arrays
+			inputs = new std::string[numInputs];
+			outputs = new std::string[numOutputs];
+
+			size_t xIndex = 0;
+			size_t index1 = 0;
+			size_t index2 = line.find(string_mapping[DELIM_MAP]);
+			std::string element;
+			while (index2 != std::string::npos) {
+				element = trim(line.substr(index1,index2 - index1));
+				if (xIndex >= numInputs) {
+					if (xIndex >= numOutputs + numInputs) {
+						file.close();
+						pgm_error* pg = new pgm_error(TOO_MANY_INPUTS,1,0);
+						pg->setSizeArgs(1);
+						throw pg;
+					} else {
+						if (element.compare("") != 0) {
+							inputs[xIndex - numInputs] = element;
+						} else {
+							file.close();
+							throw new pgm_error(MISSING_ARG,0,0);
+						}
+					}
+				} else {
+					if (element.compare("") != 0) {
+						inputs[xIndex] = element;
+					} else {
+						file.close();
+						throw new pgm_error(MISSING_ARG,0,0);
+					}
+				}
+				index1 = index2 + 1;
+				index2 = line.find(string_mapping[DELIM_MAP],index1);
+				xIndex++;
+			}
+			element = trim(line.substr(index1));
+			if (element.compare("") != 0) {
+				if (xIndex >= numInputs) {
+					if (xIndex == numInputs + numOutputs - 1) {
+						outputs[xIndex - numInputs] = element;
+					} else {
+						file.close();
+						pgm_error* pg = new pgm_error(NOT_ENOUGH_OUTPUTS,1,0);
+						pg->setSizeArgs(1);
+						throw pg;
+					}
+				} else {
+					file.close();
+					pgm_error* pg = new pgm_error(NOT_ENOUGH_INPUTS,1,0);
+					pg->setSizeArgs(1);
+					throw pg;
+				}
+			} else {
+				file.close();
+				throw new pgm_error(MISSING_ARG,0,0);
+			}
+		}
+
+		// Allocate data matrices
+		inputTable = new char*[tableHeight];
+		outputTable = new char*[tableHeight];
+		for (size_t i = 0; i < tableHeight; i++) {
+			inputTable[i] = new char[numInputs];
+			outputTable[i] = new char[numOutputs];
+		}
+
+		/* Set up table rows */
+		{
+			size_t index1;
+			size_t index2;
+			size_t xIndex = 0;
+			size_t yIndex = 0;
+			size_t linenum = 0;
+			std::string element = "";
+			while (!(file.eof())) {
+
+				// Grab row
+				getline(file,line);
+				line = trim(line);
+
+				xIndex = 0;
+
+				// Skip row if it's empty
+				if (line.compare("") != 0) {
+
+					// Parse line
+					index1 = 0;
+					index2 = line.find(string_mapping[DELIM_MAP]);
+					while (index2 != std::string::npos) {
+
+						/* Parse element in row */
+
+						// Throw error if there is too many columns
+						if (xIndex >= numOutputs + numInputs) {
+							file.close();
+							pgm_error* pg = new pgm_error(TOO_MANY_ARGS,1,0);
+							pg->setSizeArgs(linenum);
+							throw pg;
+						}
+
+						// Grab element in row
+						element = trim(line.substr(index1,index2 - index1));
+
+						// Assign value to data at (xIndex,yIndex)
+						if (element.compare(string_mapping[HI_MAP]) == 0) {
+							if (xIndex >= numInputs) {
+								outputTable[yIndex][xIndex - numInputs] = HI;
+							} else {
+								inputTable[yIndex][xIndex] = HI;
+							}
+						} else if (element.compare(string_mapping[LO_MAP]) == 0) {
+							if (xIndex >= numInputs) {
+								outputTable[yIndex][xIndex - numInputs] = LO;
+							} else {
+								inputTable[yIndex][xIndex] = LO;
+							}
+						} else if (element.compare(string_mapping[DC_MAP]) == 0) {
+							if (xIndex >= numInputs) {
+								outputTable[yIndex][xIndex - numInputs] = DC;
+							} else {
+								inputTable[yIndex][xIndex] = DC;
+							}
+						} else {
+							file.close();
+							pgm_error* pg = new pgm_error(UNRECOGNIZED_CHAR,1,1);
+							pg->setSizeArgs(index1);
+							pg->str_args[0] = line;
+							throw pg;
+						}
+						index1 = index2 + 1;
+						index2 = line.find(string_mapping[DELIM_MAP],index1);
+						xIndex++;
+					}
+					if (xIndex >= numOutputs + numInputs) {
+						file.close();
+						pgm_error* pg = new pgm_error(TOO_MANY_ARGS,1,0);
+						pg->setSizeArgs(linenum);
+						throw pg;
+					}
+					element = trim(line.substr(index1));
+					if (element.compare(string_mapping[HI_MAP]) == 0) {
+						if (xIndex >= numInputs) {
+							outputTable[yIndex][xIndex - numInputs] = HI;
+						} else {
+							inputTable[yIndex][xIndex] = HI;
+						}
+					} else if (element.compare(string_mapping[LO_MAP]) == 0) {
+						if (xIndex >= numInputs) {
+							outputTable[yIndex][xIndex - numInputs] = LO;
+						} else {
+							inputTable[yIndex][xIndex] = LO;
+						}
+					} else if (element.compare(string_mapping[DC_MAP]) == 0) {
+						if (xIndex >= numInputs) {
+							outputTable[yIndex][xIndex - numInputs] = DC;
+						} else {
+							inputTable[yIndex][xIndex] = DC;
+						}
+					} else {
+						file.close();
+						pgm_error* pg = new pgm_error(UNRECOGNIZED_CHAR,1,1);
+						pg->setSizeArgs(index1);
+						pg->str_args[0] = line;
+						throw pg;
+					}
+					yIndex++;
+				}
+				linenum++;
+			}
+			file.close();
+		}
+
+		/* Verify that all cases are accounted for and there are no contradictions */
+		{
+
+
+			// Initialize array of all cases
+			size_t max_cases = 1 << numInputs;
+			char cases[max_cases];
+			for (size_t i = 0; i < max_cases; i++) {
+				cases[i] = -1;
+			}
+
+			// Verify
+			size_t num_dcs;
+			size_t num_cases;
+			size_t case_template;
+			size_t dc_index;
+			size_t current_case;
+
+			// Iterate through each case in the table
+			for (size_t i = 0; i < tableHeight; i++) {
+
+				/* Set up initial case with dcs */
+
+				// num_dcs = number of don't care bits in this case
+				num_dcs = numInputs - count_valid(inputTable[i],numInputs);
+				case_template = 0;
+				dc_index = 0;
+
+				if (num_dcs > 0) {
+					// dc_indexes = array of indexes of don't care bits
+					size_t dc_indexes[num_dcs];
+
+					// Create case template with dc bit = lo bit
+					for (size_t j = 0; j < numInputs; j++) {
+						switch (inputTable[i][numInputs - j - 1]) {
+							case HI:
+								case_template |= (1 << j);
+								break;
+							case DC:
+								dc_indexes[dc_index] = j;
+								dc_index++;
+								break;
+						}
+					}
+
+					// num_cases = number of cases this case expands to
+					num_cases = 1 << num_dcs;
+
+					// For each case in the set of expanded cases
+					for (size_t j = 0; j < num_cases; j++) {
+
+						// current_case = current case from expanded set of cases
+						current_case = case_template;
+
+						// Create current case
+						for (size_t k = 0; k < num_dcs; k++) {
+							current_case |= ((j >> dc_indexes[k]) & 1) << dc_indexes[k];
+						}
+
+						if (cases[current_case] != -1) {
+							bool same_outputs = true;
+							for (size_t k = 0; k < numOutputs && same_outputs; k++) {
+								if (outputTable[i][k] != outputTable[cases[current_case]][k]) {
+									same_outputs = false;
+								}
+							}
+
+							if (!same_outputs) {
+								pgm_error* pg = new pgm_error(DUPLICATE_ARG,2,4);
+								pg->setSizeArgs(cases[current_case],i);
+								pg->str_args[0] = "";
+								for (size_t k = 0; k < numInputs; k++) {
+									pg->str_args[0] += inputTable[i][k];
+								}
+								pg->str_args[1] = "";
+								for (size_t k = 0; k < numInputs; k++) {
+									pg->str_args[1] += inputTable[cases[current_case]][k];
+								}
+								pg->str_args[2] = "";
+								for (size_t k = 0; k < numOutputs; k++) {
+									pg->str_args[2] += outputTable[i][k];
+								}
+								pg->str_args[3] = "";
+								for (size_t k = 0; k < numOutputs; k++) {
+									pg->str_args[3] += outputTable[cases[current_case]][k];
+								}
+								throw pg;
+							}
+						} else {
+							cases[current_case] = i;
+						}
+					}
+				} else {
+					for (size_t j = 0; j < numInputs; j++) {
+						if (inputTable[i][numInputs - j - 1] == HI) {
+							case_template |= (1 << j);
+						}
+					}
+
+					if (cases[case_template] != -1) {
+						bool same_outputs = true;
+						for (size_t k = 0; k < numOutputs && same_outputs; k++) {
+							if (outputTable[i][k] != outputTable[cases[case_template]][k]) {
+								same_outputs = false;
+							}
+						}
+
+						if (!same_outputs) {
+							pgm_error* pg = new pgm_error(DUPLICATE_ARG,2,4);
+							pg->setSizeArgs(cases[case_template],i);
+							pg->str_args[0] = "";
+							for (size_t k = 0; k < numInputs; k++) {
+								pg->str_args[0] += inputTable[i][k];
+							}
+							pg->str_args[1] = "";
+							for (size_t k = 0; k < numInputs; k++) {
+								pg->str_args[1] += inputTable[cases[case_template]][k];
+							}
+							pg->str_args[2] = "";
+							for (size_t k = 0; k < numOutputs; k++) {
+								pg->str_args[2] += outputTable[i][k];
+							}
+							pg->str_args[3] = "";
+							for (size_t k = 0; k < numOutputs; k++) {
+								pg->str_args[3] += outputTable[cases[case_template]][k];
+							}
+							throw pg;
+						}
+					} else {
+						cases[case_template] = i;
+					}
+				}
+			}
+
+			// Verfiy that all cases have been accounted for
+			for (size_t i = 0; i < max_cases; i++) {
+				if (cases[i] == -1) {
+					pgm_error* pg = new pgm_error(MISSING_ARG,0,1);
+					pg->str_args[0] = toBin(i,numInputs);
+					throw pg;
+				}
+			}
+		}
+	} catch (pgm_error* p) {
+		destruct();
+		throw p;
+	}
+}
+void truth_table::destruct() {
+	if (inputs != nullptr) {
+		delete[] inputs;
+	}
+	if (outputs != nullptr) {
+		delete[] outputs;
+	}
+	if (inputTable != nullptr) {
+		for (size_t i = 0; i < tableHeight; i++) {
+			delete[] inputTable[i];
+		}
+		delete[] inputTable;
+	}
+	if (outputTable != nullptr) {
+		for (size_t i = 0; i < tableHeight; i++) {
+			delete[] outputTable[i];
+		}
+		delete[] outputTable;
+	}
+
+	inputs = nullptr;
+	outputs = nullptr;
+	inputTable = nullptr;
+	outputTable = nullptr;
+	numInputs = 0;
+	numOutputs = 0;
+	tableHeight = 0;
+}
+void truth_table::reduce(linked_list<char*>* l1, linked_list<char*>* l2) {
+	while (true) {
+		if (find_same(l1,l2,numInputs)) {
+			continue;
+		}
+		if (find_contains(l1,l2,numInputs)) {
+			continue;
+		}
+		if (find_same_except(l1,l2,numInputs)) {
+			continue;
+		}
+		if (find_contains_except(l1,l2,numInputs)) {
+			continue;
+		}
+		break;
+	}
+}
+void truth_table::expand(linked_list<char*>* l) {
+	node<char*>* n = l->head;
+	linked_list<char*> g;
+	size_t num_dcs;
+	for (size_t i = 0; i < l->length; i++) {
+		num_dcs = numInputs - count_valid(n->data,numInputs);
+		size_t dc_indexes[num_dcs];
+		size_t dc_index = 0;
+		for (size_t j = 0; j < numInputs; j++) {
+			if (n->data[j] == DC) {
+				dc_indexes[dc_index] = j;
+				n->data[j] = LO;
+				dc_index++;
+			}
+		}
+		dc_index = 0;
+		size_t num_cases = 1 << num_dcs;
+		for (size_t j = 1; j < num_cases; j++) {
+			g.append(new node<char*>(nullptr));
+			g.tail->data = new char[numInputs];
+			for (size_t k = 0; k < numInputs; k++) {
+				if (k == numInputs - dc_indexes[dc_index] - 1) {
+					if (j & (1 << k)) {
+						g.tail->data[numInputs - k - 1] = HI;
+					} else {
+						g.tail->data[numInputs - k - 1] = LO;
+					}
+					dc_index++;
+				} else {
+					g.tail->data[numInputs - k - 1] = n->data[numInputs - k - 1];
+				}
+			}
+		}
+		n = n->next;
+	}
+
+	while (g.length > 0) {
+		l->append(g.pop());
+	}
 }
 
-int find_longest_length_str(std::string* list, int length, int curr_largest) {
-	int longest = curr_largest;
-	for (int i = 0; i < length; i++) {
+size_t find_longest_length_str(std::string* list, size_t length, size_t curr_largest) {
+	size_t longest = curr_largest;
+	for (size_t i = 0; i < length; i++) {
 		if (list[i].length() > longest) {
 			longest = list[i].length();
 		}
@@ -462,12 +878,12 @@ int find_longest_length_str(std::string* list, int length, int curr_largest) {
 	return longest;
 }
 
-std::string get_block(std::string str, int width) {
+std::string get_block(std::string str, size_t width) {
 	std::string result = "";
 	if (width < str.length()) {
 		width = str.length();
 	}
-	for (int i = 0; i < width; i++) {
+	for (size_t i = 0; i < width; i++) {
 		if (i < str.length()) {
 			result += str[i];
 		} else {
@@ -476,21 +892,21 @@ std::string get_block(std::string str, int width) {
 	}
 	return result;
 }
-std::string get_block(char c, int width) {
+std::string get_block(char c, size_t width) {
 	std::string result = "";
 	if (width < 1) {
 		width = 1;
 	}
 	result += c;
-	for (int i = 1; i < width; i++) {
+	for (size_t i = 1; i < width; i++) {
 		result += " ";
 	}
 	return result;
 }
 
-bool same(char* op1, char* op2, int len) {
+bool same(char* op1, char* op2, size_t len) {
 	bool result = true;
-	for (int i = 0; i < len; i++) {
+	for (size_t i = 0; i < len; i++) {
 		if (op1[i] != op2[i]) {
 			result = false;
 			break;
@@ -498,27 +914,31 @@ bool same(char* op1, char* op2, int len) {
 	}
 	return result;
 }
-bool contains(char* container, char* containee, int len) {
+bool contains(char* container, char* containee, size_t len) {
 	bool result = true;
 	bool contained_found = false;
-	for (int i = 0; i < len; i++) {
+	for (size_t i = 0; i < len; i++) {
 		if (container[i] != containee[i]) {
-			if (container[i] == DC) {
+			/*if (container[i] == DC) {
 				contained_found = true;
 			} else {
 				if (containee[i] == DC) {
 					result = false;
 					break;
 				}
+			}*/
+			if (container[i] != DC) {
+				return false;
 			}
 		}
 	}
-	return result && contained_found;
+	//return result && contained_found;
+	return true;
 }
-int containsExcept(char* container, char* containee, int len) {
+size_t containsExcept(char* container, char* containee, size_t len) {
 	char* temp = new char[len];
-	int index;
-	for (int i = 0; i < len; i++) {
+	size_t index;
+	for (size_t i = 0; i < len; i++) {
 		if (container[i] == DC) {
 			temp[i] = containee[i];
 		} else {
@@ -529,11 +949,11 @@ int containsExcept(char* container, char* containee, int len) {
 	delete[] temp;
 	return index;
 }
-int sameExcept(char* op1, char* op2, int len) {
-	int result = -1;
-	int num_diff = 0;
+size_t sameExcept(char* op1, char* op2, size_t len) {
+	size_t result = -1;
+	size_t num_diff = 0;
 	bool cont = true;
-	for (int i = 0; i < len && cont; i++) {
+	for (size_t i = 0; i < len && cont; i++) {
 		switch (op1[i]) {
 			case HI:
 				switch (op2[i]) {
@@ -579,41 +999,291 @@ int sameExcept(char* op1, char* op2, int len) {
 	}
 	return result;
 }
-int count_valid(char* vals, int len) {
-	int result = 0;
-	for (int i = 0; i < len; i++) {
+size_t count_valid(char* vals, size_t len) {
+	size_t result = 0;
+	for (size_t i = 0; i < len; i++) {
 		if (vals[i] != DC) {
 			result++;
 		}
 	}
 	return result;
 }
-bool find_same_except(linked_list<char*>* l, int num_i) {
-	int index;
-	for (int i = 0; i < l->length; i++) {
-		for (int j = i + 1; j < l->length; j++) {
-			index = sameExcept(l->get(i),l->get(j),num_i);
-			if (index != -1) {
-				l->get(i)[index] = DC;
-				l->remove(j,2);
+bool find_same(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i) {
+	size_t index;
+	bool n_in_l1 = true;
+	bool m_in_l1 = true;
+	node<char*>* n = l1->head;
+	node<char*>* m;
+	while (n != nullptr) {
+		if (n_in_l1) {
+			if (n->next == nullptr) {
+				m = l2->head;
+				m_in_l1 = false;
+			} else {
+				m = n->next;
+				m_in_l1 = true;
+			}
+		} else {
+			m = n->next;
+			m_in_l1 = false;
+		}
+		while (m != nullptr) {
+			if (same(n->data,m->data,num_i)) {
+				if (m_in_l1) {
+					l1->pop(m);
+				} else {
+					l2->pop(m);
+				}
+				delete[] m->data;
+				m->data = nullptr;
+				delete m;
 				return true;
 			}
+			if (m_in_l1) {
+				if (m->next == nullptr) {
+					m = l2->head;
+					m_in_l1 = false;
+				} else {
+					m = m->next;
+					m_in_l1 = true;
+				}
+			} else {
+				m = m->next;
+				m_in_l1 = false;
+			}
+		}
+		if (n_in_l1) {
+			if (n->next == nullptr) {
+				n = l2->head;
+				n_in_l1 = false;
+			} else {
+				n = n->next;
+				n_in_l1 = true;
+			}
+		} else {
+			n = n->next;
+			n_in_l1 = false;
 		}
 	}
 	return false;
 }
-bool find_contains_except(linked_list<char*>* l, int num_i) {
-	int index;
-	for (int i = 0; i < l->length; i++) {
-		for (int j = 0; j < l->length; j++) {
-			if (i != j) {
-				index = containsExcept(l->get(i),l->get(j),num_i);
-				if (index != -1) {
-					l->get(j)[index] = DC;
-					return true;
-				}
+bool find_same_except(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i) {
+	size_t index;
+	bool n_in_l1 = true;
+	bool m_in_l1 = true;
+	node<char*>* n = l1->head;
+	node<char*>* m;
+	while (n != nullptr) {
+		if (n_in_l1) {
+			if (n->next == nullptr) {
+				m = l2->head;
+				m_in_l1 = false;
+			} else {
+				m = n->next;
+				m_in_l1 = true;
 			}
+		} else {
+			m = n->next;
+			m_in_l1 = false;
+		}
+		while (m != nullptr) {
+			index = sameExcept(n->data,m->data,num_i);
+			if (index != -1) {
+				n->data[index] = DC;
+				if (m_in_l1) {
+					l1->pop(m);
+				} else {
+					l2->pop(m);
+				}
+				delete[] m->data;
+				delete m;
+				return true;
+			}
+			if (m_in_l1) {
+				if (m->next == nullptr) {
+					m = l2->head;
+					m_in_l1 = false;
+				} else {
+					m = m->next;
+					m_in_l1 = true;
+				}
+			} else {
+				m = m->next;
+				m_in_l1 = false;
+			}
+		}
+		if (n_in_l1) {
+			if (n->next == nullptr) {
+				n = l2->head;
+				n_in_l1 = false;
+			} else {
+				n = n->next;
+				n_in_l1 = true;
+			}
+		} else {
+			n = n->next;
+			n_in_l1 = false;
 		}
 	}
 	return false;
+}
+bool find_contains_except(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i) {
+	size_t index;
+	bool n_in_l1 = true;
+	bool m_in_l1 = true;
+	node<char*>* n = l1->head;
+	node<char*>* m;
+	while (n != nullptr) {
+		if (n_in_l1) {
+			if (n->next == nullptr) {
+				m = l2->head;
+				m_in_l1 = false;
+			} else {
+				m = n->next;
+				m_in_l1 = true;
+			}
+		} else {
+			m = n->next;
+			m_in_l1 = false;
+		}
+		while (m != nullptr) {
+			index = containsExcept(n->data,m->data,num_i);
+			if (index == -1) {
+				index = containsExcept(m->data,n->data,num_i);
+				if (index != -1) {
+					n->data[index] = DC;
+					return true;
+				}
+			} else {
+				m->data[index] = DC;
+				return true;
+			}
+			if (m_in_l1) {
+				if (m->next == nullptr) {
+					m = l2->head;
+					m_in_l1 = false;
+				} else {
+					m = m->next;
+					m_in_l1 = true;
+				}
+			} else {
+				m = m->next;
+				m_in_l1 = false;
+			}
+		}
+		if (n_in_l1) {
+			if (n->next == nullptr) {
+				n = l2->head;
+				n_in_l1 = false;
+			} else {
+				n = n->next;
+				n_in_l1 - true;
+			}
+		} else {
+			n = n->next;
+			n_in_l1 = false;
+		}
+	}
+	return false;
+}
+bool find_contains(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i) {
+	size_t index;
+	bool n_in_l1 = true;
+	bool m_in_l1 = true;
+	node<char*>* n = l1->head;
+	node<char*>* m;
+	while (n != nullptr) {
+		if (n_in_l1) {
+			if (n->next == nullptr) {
+				m = l2->head;
+				m_in_l1 = false;
+			} else {
+				m = n->next;
+				m_in_l1 = true;
+			}
+		} else {
+			m = n->next;
+			m_in_l1 = false;
+		}
+		while (m != nullptr) {
+			if (contains(n->data,m->data,num_i)) {
+				if (m_in_l1) {
+					l1->pop(m);
+				} else {
+					l2->pop(m);
+				}
+				delete[] m->data;
+				m->data = nullptr;
+				delete m;
+				return true;
+			} else {
+				if (contains(m->data,n->data,num_i)) {
+					if (n_in_l1) {
+						l1->pop(n);
+						if (!m_in_l1) {
+							l2->pop(m);
+							l1->append(m);
+						}
+					} else {
+						l2->pop(n);
+					}
+					delete[] n->data;
+					n->data = nullptr;
+					delete n;
+					return true;
+				}
+			}
+			if (m_in_l1) {
+				if (m->next == nullptr) {
+					m = l2->head;
+					m_in_l1 = false;
+				} else {
+					m = m->next;
+					m_in_l1 = true;
+				}
+			} else {
+				m = m->next;
+				m_in_l1 = false;
+			}
+		}
+		if (n_in_l1) {
+			if (n->next == nullptr) {
+				n = l2->head;
+				n_in_l1 = false;
+			} else {
+				n = n->next;
+				n_in_l1 = true;
+			}
+		} else {
+			n = n->next;
+			n_in_l1 = false;
+		}
+	}
+	return false;
+}
+void print(linked_list<char*>* l, size_t num_i) {
+	node<char*>* n = l->head;
+	std::cout << "------------------" << std::endl;
+	for (size_t i = 0; i < l->length; i++) {
+		for (size_t j = 0; j < num_i; j++) {
+			std::cout << n->data[j];
+		}
+		std::cout << std::endl;
+		n = n->next;
+	}
+	std::cout << "------------------" << std::endl;
+}
+void print(node<char*>* n, size_t num_i) {
+	std::cout << "------------------" << std::endl;
+	for (size_t i = 0; i < num_i; i++) {
+		std::cout << n->data[i];
+	}
+	std::cout << std::endl;
+	std::cout << "------------------" << std::endl;
+}
+void printSpecial(std::string str) {
+	for (int i = 0; i < iteration; i++) {
+		std::cout << "   ";
+	}
+	std::cout << str << std::endl;
 }
