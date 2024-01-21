@@ -5,6 +5,9 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
+#include "helper_functions.h"
+#include "string_mapping.h"
+#include "pgm_error.h"
 #include "truth_values.h"
 #include "linked_list.h"
 #include "log.h"
@@ -15,12 +18,12 @@ public:
 	std::string* outputs;
 	char** inputTable;
 	char** outputTable;
-	int numInputs;
-	int numOutputs;
-	int tableHeight;
+	size_t numInputs;
+	size_t numOutputs;
+	size_t tableHeight;
 
 	truth_table();
-	truth_table(std::string* inp, std::string* outp, char** inpTab, char** outpTab, int numInp, int numOutp, int tabHeight);
+	truth_table(std::string* inp, std::string* outp, char** inpTab, char** outpTab, size_t numInp, size_t numOutp, size_t tabHeight);
 	truth_table(std::string filename);
 	~truth_table();
 
@@ -28,24 +31,34 @@ public:
 	log* get_sum_of_products(std::string var);
 	log* get_product_of_sums(std::string var);
 	log* convert_to_log(linked_list<char*>* l, bool is_sop = true);
-	void reduce(linked_list<char*>* l);
+	void load(std::string filename);
+	void destruct();
+	void reduce(linked_list<char*>* l1, linked_list<char*>* l2);
+	//void reduce_with_dcs(linked_list<char*>* hi_cases, linked_list<char*>* dc_cases);
+	void expand(linked_list<char*>* l);
 
-	int indexOfOutput(std::string var);
+	size_t indexOfOutput(std::string var);
 };
 
 std::ostream& operator<<(std::ostream& out, truth_table& t);
 
-bool same(char* op1, char* op2, int len);
-int find_longest_length_str(std::string* list, int length, int curr_largest);
-std::string get_block(std::string str, int width);
-std::string get_block(char c, int width);
+bool same(char* op1, char* op2, size_t len);
+size_t find_longest_length_str(std::string* list, size_t length, size_t curr_largest);
+std::string get_block(std::string str, size_t width);
+std::string get_block(char c, size_t width);
 
-bool contains(char* container, char* containee, int len);
-int containsExcept(char* container, char* containee, int len);
-int sameExcept(char* op1, char* op2, int len);
-int count_valid(char* vals, int len);
+bool contains(char* container, char* containee, size_t len);
+size_t containsExcept(char* container, char* containee, size_t len);
+size_t sameExcept(char* op1, char* op2, size_t len);
+size_t count_valid(char* vals, size_t len);
 
-bool find_same_except(linked_list<char*>* l, int num_i);
-bool find_contains_except(linked_list<char*>* l, int num_i);
+bool find_same(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i);
+bool find_same_except(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i);
+bool find_contains_except(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i);
+bool find_contains(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i);
+
+void print(linked_list<char*>* l, size_t num_i);
+void print(node<char*>* n, size_t num_i);
+void printSpecial(std::string str);
 
 #endif
