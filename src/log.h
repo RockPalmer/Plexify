@@ -18,16 +18,18 @@ struct log {
 	~log();
 
 	std::string to_string();
-	bool equal_to(log* l);
 	ptr_node<log>* strict_contains(log* l);
-	bool contains(log* l, bool*& elements, int& len);
+	log* invert();
+	bool equal_to(log* l);
+	bool contains(log* l, bool*& elements, size_t& len);
 	bool contains_same_elements(log* l);
-	void copy(log* l);
 	bool demorgify();
 	bool xorify();
-	log* invert();
 	bool polarity();
 	bool can_xor(log* l);
+	void invert_this();
+	void copy(log* l);
+	//void xor_with(ptr_node<log>* column1, ptr_node<log>* column2, ptr_node<log>* row);
 };
 
 #endif
