@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 
-#define NUM_CMDS 7
+#define NUM_CMDS 8
 #define NUM_INVALID_FNAME_CHARS 9
 
 int iteration = 0;
@@ -35,7 +35,8 @@ string help_strings[] = {
 	"	print 		- Prints the current truth table loaded into memory.",
 	"	sop 		- Gets the 'Sum of Products' boolean equation after being given a variable name and loads this equation into memory.",
 	"	pos 		- Gets the 'Product of Sums' boolean equation after being given a variable name and loads this equation into memory.",
-	"	quit 		- Ends the program."
+	"	quit 		- Ends the program.",
+	"	simplify	- Simplifies the current logical expression by applying DeMorgan's laws."
 };
 string valid_cmds[] = {
 	"generate",
@@ -44,7 +45,8 @@ string valid_cmds[] = {
 	"print",
 	"sop",
 	"pos",
-	"help"
+	"help",
+	"simplify"
 };
 const string lineBreak = "-----------------------------------------------------------------------------------------";
 bool equal(string str1, string str2);
@@ -449,6 +451,18 @@ void doThing() {
 				cout << "Here is a list of commands:" << endl << endl;
 				for (int i = 0; i < NUM_CMDS - 1; i++) {
 					cout << help_strings[i] << endl;
+				}
+			} else if (line.compare("simplify") == 0) {
+				if (table_loaded) {
+					if (equation == nullptr) {
+						cout << "Oops! It looks like you haven't loaded boolean expression yet. Please load an equation that you can simplify." << endl;
+					} else {
+						equation->demorgify();
+						cout << "Your new equation: " << endl;
+						cout << focus_var << " = " << equation->to_string() << endl;
+					}
+				} else {
+					cout << "Oops! It looks like you haven't loaded a file yet. Please load a file that you can print." << endl;
 				}
 			} else {
 				cout << "Invalid command. Please try again." << endl;
