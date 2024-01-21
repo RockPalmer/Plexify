@@ -477,3 +477,61 @@ bool log::demorgify() {
 	}
 	return false;
 }
+bool log::xorify() {
+	return true;
+}
+bool log::can_xor(log* l) {
+	bool can = false;
+
+	if (contains_same_elements(l)) {
+		can = true;
+		size_t num_diff = 0;
+		ptr_node<log>* n = args.head;
+		for (size_t i = 0; i < args.length && can; i++) {
+			if (polarity() ^ n->data->polarity()) {
+				if (num_diff >= 2) {
+					can = false;
+				} else {
+					num_diff++;
+				}
+			}
+		}
+	}
+
+	return can;
+}
+
+/*void log::xor_with(ptr_node<log>* child1, ptr_node<log>* child2, ptr_node<log>* parent1, ptr_node<log>* parent2, log* gparent) {
+	gparent->args->pop(parent2);
+	delete parent2;
+
+	if (parent1->data->args.length <= 2) {
+		if (child1->data->polarity() ^ child2->data->polarity() ^ (parent1->data->gate == AND)) {
+			parent1->data->gate = XOR;
+		} else {
+			parent1->data->gate = XNOR;
+		}
+
+		if (!child1->data->polarity()) {
+			child1->data->invert_this();
+		}
+		if (!child2->data->polarity()) {
+			child2->data->invert_this();
+		}
+	} else {
+		log* l;
+
+		if (child1->data->polarity() ^ child2->data->polarity() ^ (parent1->data->gate == AND)) {
+			l = new log(XOR,EXPRESSION);
+		} else {
+			l = new log(XNOR,EXPRESSION);
+		}
+
+		if (!child1->data->polarity()) {
+			child1->data->invert_this();
+		}
+		if (!child2->data->polarity()) {
+			child2->data->invert_this();
+		}
+	}
+}*/
