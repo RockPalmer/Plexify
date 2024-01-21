@@ -27,14 +27,14 @@ template <class T> linked_list<T>::~linked_list() {
 }
 template <class T> void linked_list<T>::destruct() {
 	node<T>* n = head;
-	for (int i = 0; i < length; i++) {
+	for (size_t i = 0; i < length; i++) {
 		delete n->data;
 		n = n->next;
 	}
 }
 template <class T> void linked_list<T>::destruct_arr() {
 	node<T>* n = head;
-	for (int i = 0; i < length; i++) {
+	for (size_t i = 0; i < length; i++) {
 		delete[] n->data;
 		n = n->next;
 	}
@@ -52,7 +52,7 @@ template <class T> std::string linked_list<T>::to_string() {
 		default:
 			result = result + head->to_string();
 			temp = temp->next;
-			for (int i = 1; i < length; i++) {
+			for (size_t i = 1; i < length; i++) {
 				result = result + "," + temp->to_string();
 				temp = temp->next;
 			}
@@ -61,20 +61,20 @@ template <class T> std::string linked_list<T>::to_string() {
 	}
 	return result;
 }
-template <class T> void linked_list<T>::set(int index, T element, int type) {
+template <class T> void linked_list<T>::set(size_t index, T element, int type) {
 	if (index < length) {
-		int start = length - index;
+		size_t start = length - index;
 		node<T>* temp;
 		if (index < start) {
 			// Start from head and move forward
 			temp = head;
-			for (int i = 0; i < index; i++) {
+			for (size_t i = 0; i < index; i++) {
 				temp = temp->next;
 			}
 		} else {
 			// Start from tail and move backward
 			temp = tail;
-			for (int i = length - 1; i > index; i--) {
+			for (size_t i = length - 1; i > index; i--) {
 				temp = temp->prev;
 			}
 		}
@@ -89,11 +89,11 @@ template <class T> void linked_list<T>::set(int index, T element, int type) {
 		temp->data = element;
 	}
 }
-template <class T> void linked_list<T>::insert(int index, T element) {
+template <class T> void linked_list<T>::insert(size_t index, T element) {
 	if (index < length) {
 		node<T>* temp1;
 		node<T>* temp2;
-		int start;
+		size_t start;
 		if (head == nullptr) {
 			head->data = element;
 		} else if (index == 0) {
@@ -112,7 +112,7 @@ template <class T> void linked_list<T>::insert(int index, T element) {
 			if (index < start) {
 				// Start from head and work forward
 				temp1 = head;
-				for (int i = 0; i < index; i++) {
+				for (size_t i = 0; i < index; i++) {
 					temp1 = temp1->next;
 				}
 				temp2->next = temp1;
@@ -122,7 +122,7 @@ template <class T> void linked_list<T>::insert(int index, T element) {
 			} else {
 				// Start from tail and work backward
 				temp1 = tail;
-				for (int i = length - 1; i > index; i--) {
+				for (size_t i = length - 1; i > index; i--) {
 					temp1 = temp1->prev;
 				}
 				temp2->prev = temp1->prev;
@@ -134,10 +134,10 @@ template <class T> void linked_list<T>::insert(int index, T element) {
 		length++;
 	}
 }
-template <class T> void linked_list<T>::remove(int index, int type) {
+template <class T> void linked_list<T>::remove(size_t index, int type) {
 	if (index < length) {
 		node<T>* temp;
-		int start;
+		size_t start;
 		if (head == tail && head != nullptr) {
 			switch (type) {
 				case 1:
@@ -164,13 +164,13 @@ template <class T> void linked_list<T>::remove(int index, int type) {
 				if (index < start) {
 					// Start at head and work forward
 					temp = head;
-					for (int i = 0; i < index; i++) {
+					for (size_t i = 0; i < index; i++) {
 						temp = temp->next;
 					}
 				} else {
 					// Start at tail and work backward
 					temp = tail;
-					for (int i = length - 1; i > index; i--) {
+					for (size_t i = length - 1; i > index; i--) {
 						temp = temp->prev;
 					}
 				}
@@ -190,12 +190,51 @@ template <class T> void linked_list<T>::remove(int index, int type) {
 		length--;
 	}
 }
+template <class T> void linked_list<T>::pop(node<T>* n) {
+	if (length) {
+		if (n->next) {
+			n->next->prev = n->prev;
+		} else {
+			tail = n->prev;
+		}
+		if (n->prev) {
+			n->prev->next = n->next;
+		} else {
+			head = n->next;	
+		}
+	} else {
+		head = nullptr;
+		tail = head;
+	}
+	length--;
+}
+template <class T> node<T>* linked_list<T>::pop() {
+	node<T>* n = head;
+	if (head != nullptr) {
+		head = head->next;
+		length--;
+	} else {
+		tail = head;
+	}
+	return n;
+}
 template <class T> void linked_list<T>::append(T element) {
 	if (head == nullptr) {
 		head = new node<T>(element);
 		tail = head;
 	} else {
 		tail->next = new node<T>(element);
+		tail->next->prev = tail;
+		tail = tail->next;
+	}
+	length++;
+}
+template <class T> void linked_list<T>::append(node<T>* n) {
+	if (head == nullptr) {
+		head = n;
+		tail = head;
+	} else {
+		tail->next = n;
 		tail->next->prev = tail;
 		tail = tail->next;
 	}
@@ -212,20 +251,20 @@ template <class T> void linked_list<T>::prepend(T element) {
 	}
 	length++;
 }
-template <class T> T linked_list<T>::get(int index) {
-	int start = length - index;
+template <class T> T linked_list<T>::get(size_t index) {
+	size_t start = length - index;
 	node<T>* temp;
 	if (index < length) {
 		if (index < start) {
 			// Start from head and move forward
 			temp = head;
-			for (int i = 0; i < index; i++) {
+			for (size_t i = 0; i < index; i++) {
 				temp = temp->next;
 			}
 		} else {
 			// Start from tail and move backward
 			temp = tail;
-			for (int i = length - 1; i > index; i--) {
+			for (size_t i = length - 1; i > index; i--) {
 				temp = temp->prev;
 			}
 		}
