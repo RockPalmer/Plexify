@@ -9,7 +9,7 @@ template <class T> struct ptr_node {
 	T* data;
 
 	ptr_node();
-	ptr_node(T* element);
+	ptr_node(T* element, bool copy_vals = true);
 	~ptr_node();
 
 	void copy(ptr_node<T>* n);
@@ -19,7 +19,7 @@ template <class T> struct ptr_node {
 
 template <class T> class ptr_linked_list {
 public:
-	int length;
+	size_t length;
 	ptr_node<T>* head;
 	ptr_node<T>* tail;
 
@@ -32,13 +32,15 @@ public:
 	std::string to_string();
 	std::string print_full();
 
-	void set(int index, T* element);
-	void insert(int index, T* element);
-	void remove(int index);
+	void set(size_t index, T* element);
+	void insert(size_t index, T* element, bool copy_vals = true);
+	void remove(size_t index);
 	void pop(ptr_node<T>* n);
-	void append(T* element);
-	void prepend(T* element);
-	T* get(int index);
+	void append(T* element, bool copy_vals = true);
+	void append(ptr_node<T>* n);
+	void prepend(T* element, bool copy_vals = true);
+	void prepend(ptr_node<T>* n);
+	T* get(size_t index);
 
 	void copy(ptr_linked_list<T>* l);
 };
