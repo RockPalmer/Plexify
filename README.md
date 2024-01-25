@@ -44,9 +44,9 @@ Ends the program.
 The file `Test_cases.csv` has been included in this repository to demonstrate the capabilities of this program. Once the user has loaded
 this truth table into memory, they can get expressions for the various different output variables to demonstrate the program.
 
-Output `d` demonstrates a basic boolean expression the user might want to solve for.
-Output `e` demonstrates specifically, an expression that would be more succinctly as a sum of products.
-Output `f` demonstrates specifically, an expression that would be more succinctly as a product of sums.
-Output `g` demonstrates a boolean expression that includes "don't care" cases.
-Output `h` demonstrates an output that is always off.
-Output `j` demonstrates an output that is always on.
+* Output `d` demonstrates a basic boolean expression the user might want to solve for.
+* Output `e` demonstrates specifically, an expression that would be more succinctly as a sum of products.
+* Output `f` demonstrates specifically, an expression that would be more succinctly as a product of sums.
+* Output `g` demonstrates a boolean expression that includes "don't care" cases.
+* Output `h` demonstrates an output that is always off.
+* Output `j` demonstrates an output that is always on.
