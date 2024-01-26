@@ -855,7 +855,7 @@ void truth_table::destruct() {
 	tableHeight = 0;
 }
 void truth_table::reduce(linked_list<char*>* l1, linked_list<char*>* l2) {
-	while (true) {
+	while (l1->head != nullptr) {
 		if (find_same(l1,l2,numInputs)) {
 			continue;
 		}
