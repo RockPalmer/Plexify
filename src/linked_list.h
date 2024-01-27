@@ -31,12 +31,14 @@ public:
 
 	void set(size_t index, T element, int type = 0);
 	void insert(size_t index, T element);
+	void insertAfter(node<T>* n, node<T>* m);
 	void remove(size_t index, int type = 0);
 	void pop(node<T>* n);
 	node<T>* pop();
 	void append(T element);
 	void append(node<T>* n);
 	void prepend(T element);
+	void prepend(node<T>* n);
 	T get(size_t index);
 };
 
