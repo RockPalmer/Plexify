@@ -74,7 +74,7 @@ log* truth_table::get_product_of_sums(std::string var) {
 	linked_list<char*>* dc_cases = get_cases_where(var,DC);
 	expand(dc_cases);
 	reduce(lo_cases,dc_cases);
-	log* l = convert_to_log(lo_cases);
+	log* l = convert_to_log(lo_cases,false);
 	lo_cases->destruct_arr();
 	dc_cases->destruct_arr();
 	delete lo_cases;
@@ -855,21 +855,14 @@ void truth_table::destruct() {
 	tableHeight = 0;
 }
 void truth_table::reduce(linked_list<char*>* l1, linked_list<char*>* l2) {
-	while (l1->head != nullptr) {
-		if (find_same(l1,l2,numInputs)) {
-			continue;
-		}
-		if (find_contains(l1,l2,numInputs)) {
-			continue;
-		}
-		if (find_same_except(l1,l2,numInputs)) {
-			continue;
-		}
-		if (find_contains_except(l1,l2,numInputs)) {
-			continue;
-		}
-		break;
-	}
+	find_same(l1,l2);
+	find_contains(l1,l2);
+	find_same_except(l1,l2);
+	find_same(l1,l2);
+	find_contains(l1,l2);
+	find_same_except(l1,l2,true);
+	find_same(l1,l2);
+	find_contains(l1,l2);
 }
 void truth_table::expand(linked_list<char*>* l) {
 	node<char*>* n = l->head;
@@ -963,20 +956,11 @@ bool contains(char* container, char* containee, size_t len) {
 	bool contained_found = false;
 	for (size_t i = 0; i < len; i++) {
 		if (container[i] != containee[i]) {
-			/*if (container[i] == DC) {
-				contained_found = true;
-			} else {
-				if (containee[i] == DC) {
-					result = false;
-					break;
-				}
-			}*/
 			if (container[i] != DC) {
 				return false;
 			}
 		}
 	}
-	//return result && contained_found;
 	return true;
 }
 size_t containsExcept(char* container, char* containee, size_t len) {
@@ -1052,77 +1036,133 @@ size_t count_valid(char* vals, size_t len) {
 	}
 	return result;
 }
-bool find_same(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i) {
-	size_t index;
-	bool n_in_l1 = true;
-	bool m_in_l1 = true;
-	node<char*>* n = l1->head;
+bool truth_table::find_same(linked_list<char*>* l1, linked_list<char*>* l2) {
+	bool result = true;
+	bool m_in_l1;
+	bool m_go_to_next = true;
+	node<char*>* n;
 	node<char*>* m;
+	node<char*>* p;
+	if (l1->head == nullptr) {
+		n = l2->head;
+		m_in_l1 = false;
+	} else {
+		n = l1->head;
+		m_in_l1 = true;
+	}
 	while (n != nullptr) {
-		if (n_in_l1) {
-			if (n->next == nullptr) {
-				m = l2->head;
-				m_in_l1 = false;
+		if (n->next == nullptr) {
+			if (n == l1->tail) {
+				if (l2 == nullptr) {
+					m = nullptr;
+					m_in_l1 = true;
+				} else {
+					m = l2->head;
+					m_in_l1 = false;
+				}
 			} else {
-				m = n->next;
-				m_in_l1 = true;
+				m = nullptr;
+				m_in_l1 = false;
 			}
 		} else {
 			m = n->next;
-			m_in_l1 = false;
 		}
 		while (m != nullptr) {
-			if (same(n->data,m->data,num_i)) {
-				if (m_in_l1) {
-					l1->pop(m);
-				} else {
-					l2->pop(m);
-				}
-				delete[] m->data;
-				m->data = nullptr;
-				delete m;
-				return true;
-			}
-			if (m_in_l1) {
+			if (same(n->data,m->data,numInputs)) {
+				m_go_to_next = false;
+				p = m;
 				if (m->next == nullptr) {
-					m = l2->head;
-					m_in_l1 = false;
+					if (m == l1->tail) {
+						if (l2 == nullptr) {
+							m = nullptr;
+							m_in_l1 = true;
+						} else {
+							m = l2->head;
+							m_in_l1 = false;
+						}
+						l1->pop(p);
+					} else {
+						m = nullptr;
+						m_in_l1 = false;
+						l2->pop(p);
+					}
 				} else {
 					m = m->next;
-					m_in_l1 = true;
+					if (m_in_l1) {
+						l1->pop(p);
+					} else {
+						l2->pop(p);
+					}
 				}
+				delete[] p->data;
+				delete p;
+				result = true;
 			} else {
-				m = m->next;
-				m_in_l1 = false;
+				m_go_to_next = true;
+			}
+			if (m_go_to_next) {
+				if (m->next == nullptr) {
+					if (m == l1->tail) {
+						if (l2 == nullptr) {
+							m = nullptr;
+						} else {
+							m = l2->head;
+						}
+					} else {
+						m = nullptr;
+					}
+				} else {
+					m = m->next;
+				}
 			}
 		}
-		if (n_in_l1) {
-			if (n->next == nullptr) {
-				n = l2->head;
-				n_in_l1 = false;
+		if (n->next == nullptr) {
+			if (n == l1->tail) {
+				if (l2 == nullptr) {
+					n = nullptr;
+				} else {
+					n = l2->head;
+				}
 			} else {
-				n = n->next;
-				n_in_l1 = true;
+				n = nullptr;
 			}
 		} else {
 			n = n->next;
-			n_in_l1 = false;
 		}
 	}
-	return false;
+	return result;
 }
-bool find_same_except(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i) {
+bool truth_table::find_same_except(linked_list<char*>* l1, linked_list<char*>* l2, bool simplify) {
 	size_t index;
-	bool n_in_l1 = true;
-	bool m_in_l1 = true;
-	node<char*>* n = l1->head;
+	bool result = false;
+	bool m_go_to_next = true;
+	bool m_in_l1;
+	bool n_in_l1;
+	node<char*>* n;
 	node<char*>* m;
+	node<char*>* p;
+	if (l1->head == nullptr) {
+		n = l2->head;
+		n_in_l1 = false;
+		m_in_l1 = false;
+	} else {
+		n = l1->head;
+		n_in_l1 = true;
+		m_in_l1 = true;
+	}
+	linked_list<char*>* temp_list1 = new linked_list<char*>();
+	linked_list<char*>* temp_list2 = new linked_list<char*>();
 	while (n != nullptr) {
-		if (n_in_l1) {
-			if (n->next == nullptr) {
-				m = l2->head;
-				m_in_l1 = false;
-			} else {
+		if (n_in_l1) { // n is in l1
+			if (n->next == nullptr) { // n is at the end of l1
+				if (l2 == nullptr) { // there is no l2
+					m = nullptr;
+					m_in_l1 = true;
+				} else { // there is an l2
+					m = l2->head;
+					m_in_l1 = false;
+				}
+			} else { // n is not at the end of l1
 				m = n->next;
 				m_in_l1 = true;
 			}
@@ -1131,50 +1171,106 @@ bool find_same_except(linked_list<char*>* l1, linked_list<char*>* l2, size_t num
 			m_in_l1 = false;
 		}
 		while (m != nullptr) {
-			index = sameExcept(n->data,m->data,num_i);
+			index = sameExcept(n->data,m->data,numInputs);
 			if (index != -1) {
-				n->data[index] = DC;
-				if (m_in_l1) {
-					l1->pop(m);
+				if (simplify) {
+					m_go_to_next = false;
+					p = m;
+					if (m_in_l1) {
+						if (m->next == nullptr) {
+							if (l2 == nullptr) {
+								m = nullptr;
+							} else {
+								m = l2->head;
+								m_in_l1 = false;
+							}
+						} else {
+							m = m->next;
+						}
+						l1->pop(p);
+					} else {
+						m = m->next;
+						l2->pop(p);
+					}
+					delete[] p->data;
+					delete p;
+					result = true;
 				} else {
-					l2->pop(m);
+					m_go_to_next = true;
+					node<char*>* p = new node<char*>();
+					p->data = new char[numInputs];
+					for (size_t i = 0; i < numInputs; i++) {
+						p->data[i] = n->data[i];
+					}
+					p->data[index] = DC;
+					if (n_in_l1 && m_in_l1) {
+						temp_list1->append(p);
+					} else {
+						temp_list2->append(p);
+					}
 				}
-				delete[] m->data;
-				delete m;
-				return true;
+				result = true;
+			} else {
+				m_go_to_next = true;
 			}
-			if (m_in_l1) {
-				if (m->next == nullptr) {
-					m = l2->head;
-					m_in_l1 = false;
+			if (m_go_to_next) {
+				if (m_in_l1) {
+					if (m->next == nullptr) {
+						if (l2 == nullptr) {
+							m = nullptr;
+						} else {
+							m = l2->head;
+							m_in_l1 = false;
+						}
+					} else {
+						m = m->next;
+					}
 				} else {
 					m = m->next;
-					m_in_l1 = true;
 				}
-			} else {
-				m = m->next;
-				m_in_l1 = false;
 			}
 		}
 		if (n_in_l1) {
 			if (n->next == nullptr) {
-				n = l2->head;
-				n_in_l1 = false;
+				if (l2 == nullptr) {
+					n = nullptr;
+				} else {
+					n = l2->head;
+					n_in_l1 = false;
+				}
 			} else {
 				n = n->next;
-				n_in_l1 = true;
 			}
 		} else {
 			n = n->next;
-			n_in_l1 = false;
 		}
 	}
-	return false;
+	if (result && !simplify) {
+		reduce(temp_list1,temp_list2);
+		node<char*>* q;
+		while (temp_list1->head != nullptr) {
+			q = temp_list1->head;
+			temp_list1->pop(q);
+			l1->prepend(q);
+		}
+		while (temp_list2->head != nullptr) {
+			q = temp_list2->head;
+			temp_list2->pop(q);
+			l2->prepend(q);
+		}
+	}
+	delete temp_list1;
+	delete temp_list2;
+	return result;
 }
-bool find_contains_except(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i) {
+bool truth_table::find_contains_except(linked_list<char*>* l1, linked_list<char*>* l2) {
+	if (l1->head == nullptr) {
+		return false;
+	}
 	size_t index;
 	bool n_in_l1 = true;
 	bool m_in_l1 = true;
+	bool result = false;
 	node<char*>* n = l1->head;
 	node<char*>* m;
 	while (n != nullptr) {
@@ -1191,16 +1287,16 @@ bool find_contains_except(linked_list<char*>* l1, linked_list<char*>* l2, size_t
 			m_in_l1 = false;
 		}
 		while (m != nullptr) {
-			index = containsExcept(n->data,m->data,num_i);
+			index = containsExcept(n->data,m->data,numInputs);
 			if (index == -1) {
-				index = containsExcept(m->data,n->data,num_i);
+				index = containsExcept(m->data,n->data,numInputs);
 				if (index != -1) {
 					n->data[index] = DC;
-					return true;
+					result = true;
 				}
 			} else {
 				m->data[index] = DC;
-				return true;
+				result = true;
 			}
 			if (m_in_l1) {
 				if (m->next == nullptr) {
@@ -1228,102 +1324,180 @@ bool find_contains_except(linked_list<char*>* l1, linked_list<char*>* l2, size_t
 			n_in_l1 = false;
 		}
 	}
-	return false;
+	return result;
 }
-bool find_contains(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i) {
-	size_t index;
-	bool n_in_l1 = true;
-	bool m_in_l1 = true;
-	node<char*>* n = l1->head;
+bool truth_table::find_contains(linked_list<char*>* l1, linked_list<char*>* l2) {
+	bool result = true;
+	bool m_in_l1;
+	bool n_in_l1;
+	bool m_go_to_next = true;
+	node<char*>* n;
 	node<char*>* m;
+	node<char*>* p;
+	if (l1->head == nullptr) {
+		n = l2->head;
+		n_in_l1 = false;
+		m_in_l1 = false;
+	} else {
+		n = l1->head;
+		n_in_l1 = true;
+		m_in_l1 = true;
+	}
 	while (n != nullptr) {
-		if (n_in_l1) {
-			if (n->next == nullptr) {
-				m = l2->head;
-				m_in_l1 = false;
-			} else {
+		if (n_in_l1) { // n is in l1
+			if (n->next == nullptr) { // n = l1->tail
+				if (l2 == nullptr) { // no l2
+					m = nullptr;
+					m_in_l1 = true;
+				} else { // there is an l2
+					m = l2->head;
+					m_in_l1 = false;
+				}
+			} else { // n is in l1 but not at the end
 				m = n->next;
 				m_in_l1 = true;
 			}
-		} else {
+		} else { // n is not in l1
 			m = n->next;
 			m_in_l1 = false;
 		}
 		while (m != nullptr) {
-			if (contains(n->data,m->data,num_i)) {
-				if (m_in_l1) {
-					l1->pop(m);
-				} else {
-					l2->pop(m);
-				}
-				delete[] m->data;
-				m->data = nullptr;
-				delete m;
-				return true;
-			} else {
-				if (contains(m->data,n->data,num_i)) {
-					if (n_in_l1) {
-						l1->pop(n);
-						if (!m_in_l1) {
-							l2->pop(m);
-							l1->append(m);
-						}
-					} else {
-						l2->pop(n);
-					}
-					delete[] n->data;
-					n->data = nullptr;
-					delete n;
-					return true;
-				}
-			}
-			if (m_in_l1) {
+			if (contains(n->data,m->data,numInputs)) {
+				m_go_to_next = false;
+				p = m;
 				if (m->next == nullptr) {
-					m = l2->head;
-					m_in_l1 = false;
+					if (m == l1->tail) {
+						if (l2 == nullptr) {
+							m = nullptr;
+							m_in_l1 = true;
+						} else {
+							m = l2->head;
+							m_in_l1 = false;
+						}
+						l1->pop(p);
+					} else {
+						m = nullptr;
+						m_in_l1 = false;
+						l2->pop(p);
+					}
 				} else {
 					m = m->next;
-					m_in_l1 = true;
+					if (m_in_l1) {
+						l1->pop(p);
+					} else {
+						l2->pop(p);
+					}
+				}
+				delete[] p->data;
+				delete p;
+				result = true;
+			} else {
+				if (contains(m->data,n->data,numInputs)) {
+					m_go_to_next = false;
+					if (m->next == nullptr) {
+						if (m == l1->tail) {
+							if (l2 == nullptr) {
+								p = nullptr;
+								m_in_l1 = true;
+							} else {
+								p = l2->head;
+								m_in_l1 = false;
+							}
+						} else {
+							p = nullptr;
+							m_in_l1 = false;
+						}
+					} else {
+						p = m->next;
+					}
+					if (m_in_l1) {
+						l1->pop(m);
+					} else {
+						l2->pop(m);
+					}
+					if (n_in_l1) {
+						l1->insertAfter(n,m);
+						m = p;
+						p = n;
+						n = n->next;
+						l1->pop(p);
+						delete[] p->data;
+						delete p;
+					} else {
+						l2->insertAfter(n,m);
+						m = p;
+						p = n;
+						n = n->next;
+						l2->pop(p);
+						delete[] p->data;
+						delete p;
+					}
+					result = true;
+				}
+			}
+			if (m_go_to_next) {
+				if (m_in_l1) { // m is in l1
+					if (m->next == nullptr) { // m is at the end of l1
+						if (l2 == nullptr) { // there is not l2
+							m = nullptr;
+							m_in_l1 = true;
+						} else { // there is an l2
+							m = l2->head;
+							m_in_l1 = false;
+						}
+					} else { // m is in l1 but not at the end
+						m = m->next;
+						m_in_l1 = true;
+					}
+				} else {
+					m = m->next;
+					m_in_l1 = false;
 				}
 			} else {
-				m = m->next;
-				m_in_l1 = false;
+				m_go_to_next = true;
 			}
 		}
-		if (n_in_l1) {
-			if (n->next == nullptr) {
-				n = l2->head;
-				n_in_l1 = false;
+		if (n->next == nullptr) {
+			if (n == l1->tail) {
+				if (l2 == nullptr) {
+					n = nullptr;
+					n_in_l1 = true;
+				} else {
+					n = l2->head;
+					n_in_l1 = false;
+				}
 			} else {
-				n = n->next;
-				n_in_l1 = true;
+				n = nullptr;
+				n_in_l1 = false;
 			}
 		} else {
 			n = n->next;
-			n_in_l1 = false;
 		}
 	}
-	return false;
+	return result;
 }
 void print(linked_list<char*>* l, size_t num_i) {
 	node<char*>* n = l->head;
-	std::cout << "------------------" << std::endl;
-	for (size_t i = 0; i < l->length; i++) {
+	printSpecial("------------------");
+	std::string line;
+	while (n != nullptr) {
+		line = "";
 		for (size_t j = 0; j < num_i; j++) {
-			std::cout << n->data[j];
+			line += n->data[j];
 		}
-		std::cout << std::endl;
+		printSpecial(line);
 		n = n->next;
 	}
-	std::cout << "------------------" << std::endl;
+	printSpecial("------------------");
 }
 void print(node<char*>* n, size_t num_i) {
-	std::cout << "------------------" << std::endl;
+	printSpecial("------------------");
+	std::string fn = "";
 	for (size_t i = 0; i < num_i; i++) {
-		std::cout << n->data[i];
+		fn += n->data[i];
 	}
-	std::cout << std::endl;
-	std::cout << "------------------" << std::endl;
+	printSpecial(fn);
+	printSpecial("------------------");
 }
 void printSpecial(std::string str) {
 	for (int i = 0; i < iteration; i++) {
