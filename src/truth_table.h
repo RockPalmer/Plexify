@@ -34,8 +34,12 @@ public:
 	void load(std::string filename);
 	void destruct();
 	void reduce(linked_list<char*>* l1, linked_list<char*>* l2);
-	//void reduce_with_dcs(linked_list<char*>* hi_cases, linked_list<char*>* dc_cases);
 	void expand(linked_list<char*>* l);
+
+	bool find_same(linked_list<char*>* l1, linked_list<char*>* l2);
+	bool find_same_except(linked_list<char*>* l1, linked_list<char*>* l2, bool simplify = false);
+	bool find_contains_except(linked_list<char*>* l1, linked_list<char*>* l2);
+	bool find_contains(linked_list<char*>* l1, linked_list<char*>* l2);
 
 	size_t indexOfOutput(std::string var);
 };
@@ -51,11 +55,6 @@ bool contains(char* container, char* containee, size_t len);
 size_t containsExcept(char* container, char* containee, size_t len);
 size_t sameExcept(char* op1, char* op2, size_t len);
 size_t count_valid(char* vals, size_t len);
-
-bool find_same(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i);
-bool find_same_except(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i);
-bool find_contains_except(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i);
-bool find_contains(linked_list<char*>* l1, linked_list<char*>* l2, size_t num_i);
 
 void print(linked_list<char*>* l, size_t num_i);
 void print(node<char*>* n, size_t num_i);
