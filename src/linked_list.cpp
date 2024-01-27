@@ -134,6 +134,20 @@ template <class T> void linked_list<T>::insert(size_t index, T element) {
 		length++;
 	}
 }
+template <class T> void linked_list<T>::insertAfter(node<T>* n, node<T>* m) {
+	if (n == tail) {
+		n->next = m;
+		m->next = nullptr;
+		m->prev = n;
+		tail = m;
+	} else {
+		m->next = n->next;
+		n->next->prev = m;
+		m->prev = n;
+		n->next = m;
+	}
+	length++;
+}
 template <class T> void linked_list<T>::remove(size_t index, int type) {
 	if (index < length) {
 		node<T>* temp;
@@ -246,6 +260,17 @@ template <class T> void linked_list<T>::prepend(T element) {
 		tail = head;
 	} else {
 		head->prev = new node<T>(element);
+		head->prev->next = head;
+		head = head->prev;
+	}
+	length++;
+}
+template <class T> void linked_list<T>::prepend(node<T>* n) {
+	if (head == nullptr) {
+		head = n;
+		tail = head;
+	} else {
+		head->prev = n;
 		head->prev->next = head;
 		head = head->prev;
 	}
