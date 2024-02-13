@@ -1,3 +1,7 @@
+/** This class acts the same as the linked_list class with the exception that all data members 
+ * are pointers to other objects. The class assumed this and, when the destructor is called,
+ * The data at each pointer is also deallocated */
+
 #ifndef PTR_LINKED_LIST
 #define PTR_LINKED_LIST
 
