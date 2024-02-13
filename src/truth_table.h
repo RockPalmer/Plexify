@@ -1,3 +1,25 @@
+/** This class is meant to represent any accurate truth table that the user would like to generate.
+ * 
+ * This class has 7 data members <inputs>, <outputs>, <inputTable>, <outputTable>, <numInputs>,
+ * <numOutputs>, and <tableHeight>
+ * 
+ * <inputs> and <outputs> are string arrays of size <numInputs> and <numOutputs> respectively. 
+ * They store the names of all the input and output variables for the truth table respectively.
+ *
+ * <inputTable> and <outputTable> are 2D char arrays of size <numInputs> by <tableHeight> and
+ * <numOutputs> by <tableHeight> respectively. They store all the rows of input and output values 
+ * for the truth table respectively. The value at each index of this 2D array is either HI, LO, 
+ * or DC which are macros defined in the "truth_values.h" file.
+ *
+ * The total amount of input and output variables that can be loaded is compiler-dependent.
+ * The maximum number of outputs that can be loaded is set as <SIZE_MAX> and the total number
+ * of inputs that can be loaded is set as floor(log2(SIZE_MAX)).
+ * 
+ * This class is meant to be used to parse CSV files into actual truth tables and run analysis on
+ * them. For more information on how the file reading process occurs and formatting requirements
+ * for successful file parsing, please see the description for the function
+ * "void truth_table::load(std::string filename)" in "truth_table.cpp" */
+
 #ifndef TRUTH_TABLE
 #define TRUTH_TABLE
 
@@ -36,28 +58,21 @@ public:
 	void reduce(linked_list<char*>* l1, linked_list<char*>* l2);
 	void expand(linked_list<char*>* l);
 
-	bool find_same(linked_list<char*>* l1, linked_list<char*>* l2);
-	bool find_same_except(linked_list<char*>* l1, linked_list<char*>* l2, bool simplify = false);
-	bool find_contains_except(linked_list<char*>* l1, linked_list<char*>* l2);
-	bool find_contains(linked_list<char*>* l1, linked_list<char*>* l2);
+	bool generate_same_except(linked_list<char*>* l1, linked_list<char*>* l2);
+	bool find_redundant(linked_list<char*>* l1, linked_list<char*>* l2);
 
 	size_t indexOfOutput(std::string var);
 };
 
 std::ostream& operator<<(std::ostream& out, truth_table& t);
 
-bool same(char* op1, char* op2, size_t len);
 size_t find_longest_length_str(std::string* list, size_t length, size_t curr_largest);
 std::string get_block(std::string str, size_t width);
 std::string get_block(char c, size_t width);
 
-bool contains(char* container, char* containee, size_t len);
-size_t containsExcept(char* container, char* containee, size_t len);
+bool can_insert(node<char*>* n, linked_list<char*>* l1, size_t len);
+int check_redundant(char* op1, char* op2, size_t len);
 size_t sameExcept(char* op1, char* op2, size_t len);
 size_t count_valid(char* vals, size_t len);
-
-void print(linked_list<char*>* l, size_t num_i);
-void print(node<char*>* n, size_t num_i);
-void printSpecial(std::string str);
 
 #endif
