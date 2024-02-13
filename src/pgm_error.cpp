@@ -5,6 +5,11 @@ pgm_error::pgm_error() {
 	size_args = nullptr;
 	str_args = nullptr;
 }
+
+/*
+ * Constructor for pgm_error where num_int = number of size_t args
+ * and num_str = number of string args for this pgm_error
+ */
 pgm_error::pgm_error(error_type t, int num_int, int num_str) {
 	type = t;
 	num_size_args = num_int;
@@ -29,6 +34,7 @@ pgm_error::~pgm_error() {
 	}
 }
 
+// Sets the size_t args for this pgm_error
 void pgm_error::setSizeArgs(size_t arg,...) {
 	if (num_size_args > 0) {
 		size_args[0] = arg;
@@ -43,6 +49,7 @@ void pgm_error::setSizeArgs(size_t arg,...) {
 	}
 }
 
+// Sets the string args for this pgm_error
 void pgm_error::setStrArgs(std::string args[]) {
 	if (num_str_args > 0) {
 		for (int i = 0; i < num_str_args; i++) {
