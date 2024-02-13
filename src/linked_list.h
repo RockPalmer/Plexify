@@ -1,3 +1,8 @@
+/*
+ * This header file defines a linked list structure and a node structure
+ * that is used by the linked list
+ */
+
 #ifndef LINKED_LIST
 #define LINKED_LIST
 
