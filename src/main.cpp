@@ -1,7 +1,10 @@
 #include <iostream>
 #include <string>
 
+// Length of help_strings[] and valid_cmds[] arrays
 #define NUM_CMDS 8
+
+// Length of invalid_filename_chars[] array
 #define NUM_INVALID_FNAME_CHARS 9
 
 int iteration = 0;
@@ -17,6 +20,7 @@ int iteration = 0;
 
 using namespace std;
 
+// Characters that cannot be included in filename that the user provides
 char invalid_filename_chars[] = {
 	'<',
 	'>',
@@ -29,6 +33,7 @@ char invalid_filename_chars[] = {
 	'*'
 };
 
+// Lines that will be displayed when the user issues the "help" command
 string help_strings[] = {
 	"	generate 	- Generates a truth table CSV file after being provided the filename the input variables and the output variables.",
 	"	load 		- Loads a truth table CSV file into memory. This command must be run before performimg 'print', 'sop', or 'pos'.",
@@ -38,6 +43,8 @@ string help_strings[] = {
 	"	quit 		- Ends the program.",
 	"	simplify	- Simplifies the current logical expression by applying DeMorgan's laws."
 };
+
+// Contains the list of valid commands
 string valid_cmds[] = {
 	"generate",
 	"quit",
@@ -49,35 +56,68 @@ string valid_cmds[] = {
 	"simplify"
 };
 const string lineBreak = "-----------------------------------------------------------------------------------------";
-bool equal(string str1, string str2);
-bool is_numeric(string str);
+
+// Forward declaration of functions
 bool is_whitespace(string str);
 bool contains_chars(string str, char chars[], int len);
-int map(string str, string strs[], int len);
 void doThing();
 void explode(string str, string delim, string*& strs, size_t& len, size_t max_size);
 void printTableInfo(string filename, string* input_vars, string* output_vars, size_t number_inputs, size_t number_outputs);
-void parseExp(string line, size_t*& terms, size_t& len, size_t max_size);
 
 int main() {
 	doThing();
 	cout << "Program terminated" << endl;
 }
 
+// This is the main function that the user will interact with
 void doThing() {
 
+	// While this is true, the program will continue to ask for user input,
+	// Once this is false, the program will terminate
 	bool keep_going = true;
+
+	// At each iteration where this is true, it will show the header of the program
+	// each time it asks for input that looks like this:
+	// 
+	// --------------------------------------------------------
+	// Current Table:		Table.csv
+	// Current Equation:	output = (input1 & input2) | ~input3
+	// --------------------------------------------------------
 	bool show_header = true;
+
+	// This indicates whether a truth_table is currently loaded into the memory.
+	// This is important because, when there is not, certain commands are disabled
+	// like "print"
 	bool table_loaded = false;
+
+	// Contains the user input
 	string line = "";
+
+	// Contains the name of the currently loaded file
 	string fname = "";
+
+	// Contains the name of the variable whose equation is currently loaded in memory
 	string focus_var = "";
+
+	// Contains the truth_table currently being studied
 	truth_table t;
+
+	// Contains the boolean expression that is currently being studied
 	log* equation = nullptr;
+
+	// Defines the maximum number of inputs for a truth_table
+	size_t g = SIZE_MAX;
+	size_t max_inputs = 0;
+	while (g) {
+		max_inputs++;
+		g >>= 1;
+	}
 
 	cout << "Welcome! Please enter a command below. If you want to see a list of commands, type 'help' and press ENTER." << endl;
 	while (keep_going) {
 		if (show_header) {
+
+			// Print the header block
 			cout << lineBreak << endl;
 			cout << "Current table    : ";
 			if (table_loaded) {
@@ -99,17 +139,27 @@ void doThing() {
 
 		line = trim(line);
 
+		// If the user presses enter, the program should just move to a new line
 		if (line.compare("") != 0) {
 			show_header = true;
 
-			if (line.compare("generate") == 0) { // Generate new file
+			// This command generates a new CSV truth table file for the user
+			// based on parameters they provide
+			if (line.compare("generate") == 0) {
+				// Stores the current filename that hasn't been stored in <fname> yet
 				string filename = "";
+
+				// Store the input and output variables
 				size_t number_inputs = 0;
 				size_t number_outputs = 0;
 				string* input_vars = nullptr;
 				string* output_vars = nullptr;
+
+				// Governs what state in the "generate file" process the user is at
 				int state = 0;
 				while (state >= 0) {
+
+					// Prints out the current information of the file to be generated
 					printTableInfo(filename,input_vars,output_vars,number_inputs,number_outputs);
 					switch (state) {
 						case 0: // Set file name
@@ -118,29 +168,43 @@ void doThing() {
 							getline(cin,filename);
 							filename = trim(filename);
 							if (filename.compare("") == 0) {
+
+								// Go back to the main menu
 								state = -1;
 							} else {
 								if (contains_chars(filename,invalid_filename_chars,NUM_INVALID_FNAME_CHARS)) {
+
+									// Prompt the user again if this filename contains invalid characters
 									cout << "This filename is invalid." << endl;
 									filename = "";
 								} else {
+
+									// If this filename is valid, move to the next state
 									state = 1;
 								}
 							}
 							break;
 						case 1: // Set input variables
 							cout << "Please enter the name(s) of the input variables you would like to use for this truth table separated by commas or press ENTER to go back." << endl;
+							cout << "For example, if the input variables I wanted to use were called \"apple\", \"pear\", and \"banana\" I would write this:" << endl;
+							cout << endl << "\tapple,pear,banana" << endl << endl;
 							cout << ">> ";
 							getline(cin,line);
 							line = trim(line);
 							if (line.compare("") == 0) {
+
+								// Go back to the "get file name" step
 								filename = "";
 								state = 0;
 							} else {
-								explode(line,",",input_vars,number_inputs,64);
+
+								// Store the input variables from <line> to <input_vars> and <number_inputs>
+								explode(line,",",input_vars,number_inputs,max_inputs);
 								bool is_valid = true;
 								if (number_inputs != -3) {
 									for (size_t i = 0; i < number_inputs && is_valid; i++) {
+
+										// Throw error if one of the variables is blank
 										if (is_whitespace(input_vars[i])) {
 											delete[] input_vars;
 											input_vars = nullptr;
@@ -155,16 +219,23 @@ void doThing() {
 										state = 2;
 									}
 								} else {
+
+									// number_inputs == -3 indicates too many inputs
 									cout << "Too many input variables entered. The maximum allowed amount is 64." << endl;
 								}
 							}
 							break;
 						case 2: // Set output variables
 							cout << "Please enter the name(s) of the output variables you would like to use for this truth table separated by commas or press ENTER to go back." << endl;
+							cout << "For example, if the output variables I wanted to use were called \"apple\", \"pear\", and \"banana\" I would write this:" << endl;
+							cout << endl << "\tapple,pear,banana" << endl << endl;
+							cout << ">> ";
 							cout << ">> ";
 							getline(cin,line);
 							line = trim(line);
 							if (line.compare("") == 0) {
+
+								// Go back to the "get input variables" step
 								delete[] output_vars;
 								output_vars = nullptr;
 								number_outputs = 0;
@@ -195,11 +266,11 @@ void doThing() {
 					}
 				}
 				if (state == -2) {
-					if (filename.substr(filename.length()-4).compare(".csv") != 0) {
-						filename = filename + ".csv";
-					}
 					ofstream outfile;
 					outfile.open(filename);
+
+					// Write the first line of the file. This line defines which columns 
+					// are inputs and which columns are outputs
 					outfile << string_mapping[INPUT_MAP] << ",";
 					for (size_t i = 1; i < number_inputs; i++) {
 						outfile << string_mapping[DELIM_MAP];
@@ -210,6 +281,8 @@ void doThing() {
 					}
 					outfile << endl;
 
+					// Write the second line of the file. This line defines th names
+					// of the input and output variables
 					for (size_t i = 0; i < number_inputs; i++) {
 						if (i != 0) {
 							outfile << string_mapping[DELIM_MAP];
@@ -220,6 +293,9 @@ void doThing() {
 						outfile << string_mapping[DELIM_MAP] << output_vars[i];
 					}
 
+					// Write the remaining lines of the file based on how many input
+					// variables there are. The total number of data lines written is
+					// equal to 1 << number_inputs or 2^(number_inputs)
 					long long finished_num = (1 << number_inputs);
 					long long current_num = 0;
 					while (current_num != finished_num) {
@@ -246,6 +322,8 @@ void doThing() {
 					cout << "File generated successfully!" << endl;
 					printTableInfo(filename,input_vars,output_vars,number_inputs,number_outputs);
 				}
+
+				// Delete the input and output variables arrays as they are now written into the file
 				if (input_vars != nullptr) {
 					delete[] input_vars;
 					input_vars = nullptr;
@@ -259,17 +337,23 @@ void doThing() {
 			} else if (line.compare("quit") == 0) { // Quit
 				keep_going = false;
 			} else if (line.compare("load") == 0) { // Load file
+
+				// Keeps track of what step in the "load file" process the user is at
 				int state = 0;
+
+				// Stores the name of the file the user would like to load
 				string filename = "";
 				while (state >= 0) {
 					switch (state) {
-						case 0:
+						case 0: // File name prompt
 							filename = "";
 							cout << "Please enter the name of the file you would like to load or press ENTER to go back." << endl;
 							cout << ">> ";
 							getline(cin,filename);
 							filename = trim(filename);
 							if (filename.compare("") == 0) {
+
+								// Return to the main menu
 								state = -1;
 							} else {
 								ifstream infile;
@@ -279,29 +363,37 @@ void doThing() {
 									infile.open(filename);
 								}
 								if (infile) {
+
+									// Error finding this file
 									state = 2;
 								} else {
+
+									// File found successfully
 									state = 1;
 								}
 								infile.close();
 							}
 							break;
-						case 1:
+						case 1: // Invalid file name provided
 							cout << "Oops! That file does not exist. Please enter a valid file name or press ENTER to go back." << endl;
 							cout << ">> ";
 							getline(cin,filename);
 							if (filename.compare("") == 0) {
+
+								// Return to main menu
 								state = -1;
 							} else {
 								ifstream infile;
 								infile.open(filename);
 								if (infile) {
+
+									// File found successfully
 									state = 2;
 								}
 								infile.close();
 							}
 							break;
-						case 2:
+						case 2: // Attempt to load the file
 							try {
 								t.load(filename);
 								cout << "File successfully loaded!" << endl;
@@ -315,6 +407,10 @@ void doThing() {
 								table_loaded = true;
 							} catch (pgm_error* pg) {
 								cout << "Error found loading this truth table." << endl;
+
+								// Below is all the errors that could be encountered when reading the truth
+								// table file. See truth_table.cpp for more information on the correct
+								// format for truth table files
 								switch (pg->type) {
 									case NOT_FOUND:
 										cout << pg->str_args[0] << " column not found." << endl;
@@ -401,7 +497,7 @@ void doThing() {
 					int state = 0;
 					while (state >= 0) {
 						switch (state) {
-							case 0:
+							case 0: // Prompt user for variable name
 								cout << "Please enter the name of the variable you would like to solve for or press ENTER to go back." << endl;
 								cout << ">> ";
 								getline(cin,line);
@@ -409,14 +505,14 @@ void doThing() {
 								if (line.compare("") == 0) {
 									state = -1;
 								} else {
-									if (map(line,t.outputs,t.numOutputs) == -1) {
+									if (t.indexOfOutput(line) == -1) {
 										state = 1;
 									} else {
 										state = -2;
 									}
 								}
 								break;
-							case 1:
+							case 1: // Variable name provided was invalid
 								cout << "Oops! That variable could not be found in the loaded trth table. Please enter a different variable or press ENTER to go back." << endl;
 								cout << ">> ";
 								getline(cin,line);
@@ -424,7 +520,7 @@ void doThing() {
 								if (line.compare("") == 0) {
 									state = -1;
 								} else {
-									if (map(line,t.outputs,t.numOutputs) != -1) {
+									if (t.indexOfOutput(line) == -1) {
 										state = -2;
 									}
 								}
@@ -469,54 +565,17 @@ void doThing() {
 			}
 		}
 	}
+
+	// Run garbage collection
 	if (equation != nullptr) {
 		delete equation;
 	}
 }
-bool equal(string str1, string str2) {
-	bool result = false;
-	int len1 = str1.length();
-	int len2 = str2.length();
-	if (len1 != len2) {
-		result = false;
-	} else {
-		result = true;
-		for (int i = 0; i < len1 && result; i++) {
-			if (str1[i] >= 'a' && str1[i] <= 'z') {
-				result = (str1[i] == str2[i] || str1[i] == (str2[i] + 32));
-			} else if (str1[i] >= 'A' && str1[i] <= 'Z') {
-				result = (str1[i] == str2[i] || str1[i] == (str2[i] - 32));
-			} else {
-				result = str1[i] == str2[i];
-			}
-		}
-	}
-	return result;
-}
-bool is_numeric(string str) {
-	int len = str.length();
-	switch (len) {
-		case 0:
-			return false;
-			break;
-		case 1:
-			return (str[0] <= '9' && str[0] >= '0');
-			break;
-		default:
-			if (str[0] == '0') {
-				return false;
-			} else {
-				int start = (str[0] == '-')?1:0;
-				for (int i = start; i < len; i++) {
-					if (str[i] > '9' || str[i] < '0') {
-						return false;
-					}
-				}
-			}
-			break;
-	}
-	return true;
-}
+
+/*
+ * Returns true if all the characters in <str> are whitespace characters.
+ * Returns false otherwise.
+ */
 bool is_whitespace(string str) {
 	int len = str.length();
 	for (int i = 0; i < len; i++) {
@@ -526,6 +585,10 @@ bool is_whitespace(string str) {
 	}
 	return true;
 }
+/*
+ * Returns true if <str> contains and character in the <chars>[len] array
+ * Returns false otherwise.
+ */
 bool contains_chars(string str, char chars[], int len) {
 	int str_len = str.length();
 	for (int i = 0; i < str_len; i++) {
@@ -537,90 +600,17 @@ bool contains_chars(string str, char chars[], int len) {
 	}
 	return false;
 }
-int map(string str, string strs[], int len) {
-	int num_valid = len;
-	int result = -1;
-	int str_len = str.length();
-	int next[len];
-	int prev[len];
-	int start = 0;
-
-	for (int i = 0; i < len; i++) {
-		prev[i] = i-1;
-		next[i] = i+1;
-	}
-	next[len - 1] = 0;
-	prev[0] = len - 1;
-
-	int index = start;
-	while (num_valid) {
-		if (strs[index].length() != str_len) {
-			next[prev[index]] = next[index];
-			prev[next[index]] = prev[index];
-			num_valid--;
-			if (index == start) {
-				if (next[index] == start) {
-					num_valid = 0;
-				} else {
-					start = next[index];
-					index = next[index];
-				}
-			} else {
-				index = next[index];
-				if (index == start) {
-					break;
-				}
-			}
-		} else {
-			index = next[index];
-			if (index == start) {
-				break;
-			}
-		}
-	}
-
-	if (num_valid) {
-		bool right_val = true;
-		for (int i = 0; i < str_len; i++) {
-			index = start;
-			while (num_valid) {
-				if (str[i] != strs[index][i]) {
-					next[prev[index]] = next[index];
-					prev[next[index]] = prev[index];
-					num_valid--;
-					if (index == start) {
-						if (next[index] == start) {
-							num_valid = 0;
-						} else {
-							start = next[index];
-							index = next[index];
-						}
-					} else {
-						index = next[index];
-						if (index == start) {
-							break;
-						}
-					}
-				} else {
-					index = next[index];
-					if (index == start) {
-						break;
-					}
-				}
-			}
-		}
-	}
-
-	if (num_valid) {
-		result = start;
-	}
-
-	return result;
-}
+/*
+ * Breaks up <str> using the delimiter <delim> and stores the elements in the
+ * array <strs[len]>. If, before it finishes counting the elements, the total
+ * number of elements found becomes equal to max_size, it sets len = -3
+ */
 void explode(string str, string delim, string*& strs, size_t& len, size_t max_size) {
 	len = 1;
 	size_t start_index = 0;
 	bool keep_going = true;
+
+	// Count the total number of elements in the delimited string
 	while (keep_going) {
 		start_index = str.find(delim,start_index);
 		if (start_index == string::npos) {
@@ -641,12 +631,15 @@ void explode(string str, string delim, string*& strs, size_t& len, size_t max_si
 		}
 	}
 
+	// Allocate space for the new string array
 	strs = new string[len];
 
 	size_t str_index = 0;
 	start_index = 0;
 	size_t end_index = 0;
 	keep_going = true;
+
+	// Store the elements of the delimited string into <strs>
 	while (keep_going) {
 		start_index = end_index;
 		end_index = str.find(delim,start_index);
@@ -664,6 +657,11 @@ void explode(string str, string delim, string*& strs, size_t& len, size_t max_si
 		}
 	}
 }
+
+/* 
+ * Prints a formatted block that contains the information for a truth table file 
+ * that is in the process of being generated
+ */
 void printTableInfo(string filename, string* input_vars, string* output_vars, size_t number_inputs, size_t number_outputs) {
 	size_t str_len = filename.length();
 	string input_string = "";
@@ -704,8 +702,9 @@ void printTableInfo(string filename, string* input_vars, string* output_vars, si
 		cout << filename;
 	}
 	cout << endl;
-	cout << "Input variables  :" << endl;
+	cout << "Input variables  :";
 	if (number_inputs > 0) {
+		cout << endl;
 		buff_len = str_len - input_string.length();
 		for (size_t i = 0; i < buff_len; i++) {
 			cout << " ";
@@ -713,8 +712,9 @@ void printTableInfo(string filename, string* input_vars, string* output_vars, si
 		cout << input_string;
 	}
 	cout << endl;
-	cout << "Output variables :" << endl;
+	cout << "Output variables :";
 	if (number_outputs > 0) {
+		cout << endl;
 		buff_len = str_len - output_string.length();
 		for (size_t i = 0; i < buff_len; i++) {
 			cout << " ";
