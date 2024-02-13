@@ -24,6 +24,9 @@ template <class T> void ptr_node<T>::copy(ptr_node<T>* n) {
 	}
 	data->copy(n->data);
 }
+/* 
+ * Returns a string representaion of the data in the node.
+ */
 template <class T> std::string ptr_node<T>::to_string() {
 	return data->to_string();
 }
@@ -41,19 +44,25 @@ template <class T> ptr_linked_list<T>::~ptr_linked_list() {
 		delete temp;
 	}
 }
+
+/*
+ * Returns a string representation of the linked list
+ */
 template <class T> std::string ptr_linked_list<T>::to_string() {
 	std::string result = "[";
 	ptr_node<T>* temp = head;
 	switch (length) {
-		case 0:
+		case 0: // If the list is empty
 			result = result + "EMPTY]";
 			break;
-		case 1:
+		case 1: // If there is only one node in the list
 			result = result + head->to_string() + "]";
 			break;
-		default:
+		default: // Otherwise
 			result = result + head->to_string();
 			temp = temp->next;
+
+			// Iterate through the nodes of the list
 			for (size_t i = 1; i < length; i++) {
 				result = result + "," + temp->to_string();
 				temp = temp->next;
@@ -63,6 +72,9 @@ template <class T> std::string ptr_linked_list<T>::to_string() {
 	}
 	return result;
 }
+/*
+ * Functions used for big fixing
+ */
 template <class T> std::string ptr_linked_list<T>::print_full() {
 	std::string result = "";
 	if (length) {
@@ -115,6 +127,10 @@ template <class T> std::string ptr_linked_list<T>::print_full() {
 	}
 	return result;
 }
+/*
+ * This function sets the value of the <index>th node of the list to
+ * <element>.
+ */
 template <class T> void ptr_linked_list<T>::set(size_t index, T* element) {
 	if (index < length) {
 		size_t start = length - index;
@@ -140,25 +156,28 @@ template <class T> void ptr_linked_list<T>::set(size_t index, T* element) {
 		temp->data = element;
 	}
 }
+/*
+ * This function inserts a node at index <index> containing <element> as its data.
+ */
 template <class T> void ptr_linked_list<T>::insert(size_t index, T* element, bool copy_vals) {
 	if (index <= length) {
 		ptr_node<T>* temp1;
 		ptr_node<T>* temp2;
 		size_t start;
-		if (head == nullptr) {
+		if (head == nullptr) { // If the list is empty
 			head = new ptr_node<T>(element,copy_vals);
 			tail = head;
-		} else if (index == 0) {
+		} else if (index == 0) { // If the list is not empty and the node must be inserted at the beginning of the list
 			temp1 = new ptr_node<T>(element,copy_vals);
 			temp1->next = head;
 			head->prev = temp1;
 			head = temp1;
-		} else if (index == length) {
+		} else if (index == length) { // If the list is not empty and the node must be inserted at the end of the list
 			temp1 = new ptr_node<T>(element,copy_vals);
 			temp1->prev = tail;
 			tail->next = temp1;
 			tail = temp1;
-		} else {
+		} else { // Otherwise
 			start = length - index;
 			temp2 = new ptr_node<T>(element,copy_vals);
 			if (index < start) {
@@ -186,24 +205,28 @@ template <class T> void ptr_linked_list<T>::insert(size_t index, T* element, boo
 		length++;
 	}
 }
+/*
+ * This function removes the node at index <index> from the list and deletes
+ * the node.
+ */
 template <class T> void ptr_linked_list<T>::remove(size_t index) {
 	if (index < length) {
 		ptr_node<T>* temp;
 		size_t start;
-		if (head == tail && head != nullptr) {
+		if (head == tail && head != nullptr) { // If there is only one node in the list
 			delete head;
 			head = nullptr;
 			tail = head;
-		} else {
-			if (index == 0) {
+		} else { // If there is more than one element in the list
+			if (index == 0) { // If the first node in the list must be removed
 				temp = head;
 				head = head->next;
 				head->prev = nullptr;
-			} else if (index == length - 1) {
+			} else if (index == length - 1) { // If the last node in the list must be removed
 				temp = tail;
 				tail = tail->prev;
 				tail->next = nullptr;
-			} else {
+			} else { // Otherwise
 				start = length - index;
 				if (index < start) {
 					// Start at head and work forward
@@ -226,6 +249,9 @@ template <class T> void ptr_linked_list<T>::remove(size_t index) {
 		length--;
 	}
 }
+/*
+ * Removes the node <n> from the list without deleting it.
+ */
 template <class T> void ptr_linked_list<T>::pop(ptr_node<T>* n) {
 	if (length) {
 		if (n->next) {
@@ -244,6 +270,9 @@ template <class T> void ptr_linked_list<T>::pop(ptr_node<T>* n) {
 	}
 	length--;
 }
+/*
+ * Appends a new node to the end of the list with <element> as its data
+ */
 template <class T> void ptr_linked_list<T>::append(T* element, bool copy_vals) {
 	if (head == nullptr) {
 		head = new ptr_node<T>(element,copy_vals);
@@ -255,6 +284,9 @@ template <class T> void ptr_linked_list<T>::append(T* element, bool copy_vals) {
 	}
 	length++;
 }
+/*
+ * Appends the node <n> to the end of the list
+ */
 template <class T> void ptr_linked_list<T>::append(ptr_node<T>* n) {
 	if (head == nullptr) {
 		head = n;
@@ -269,6 +301,9 @@ template <class T> void ptr_linked_list<T>::append(ptr_node<T>* n) {
 	}
 	length++;
 }
+/*
+ * Appends a new node to the beginning of the list with <element> as its data
+ */
 template <class T> void ptr_linked_list<T>::prepend(T* element, bool copy_vals) {
 	if (head == nullptr) {
 		head = new ptr_node<T>(element,copy_vals);
@@ -280,6 +315,9 @@ template <class T> void ptr_linked_list<T>::prepend(T* element, bool copy_vals) 
 	}
 	length++;
 }
+/*
+ * Appends the node <n> to the beginning of the list
+ */
 template <class T> void ptr_linked_list<T>::prepend(ptr_node<T>* n) {
 	if (head == nullptr) {
 		head = n;
@@ -294,6 +332,9 @@ template <class T> void ptr_linked_list<T>::prepend(ptr_node<T>* n) {
 	}
 	length++;
 }
+/*
+ * Returns the data at the <index>th node of the list
+ */
 template <class T> T* ptr_linked_list<T>::get(size_t index) {
 	size_t start = length - index;
 	ptr_node<T>* temp;
@@ -314,7 +355,12 @@ template <class T> T* ptr_linked_list<T>::get(size_t index) {
 	}
 	return temp->data;
 }
+/*
+ * Copies the contents of <l> to <this>
+ */
 template <class T> void ptr_linked_list<T>::copy(ptr_linked_list<T>* l) {
+
+	// If <this> is shorter than <l>
 	if (length < l->length) {
 		if (length == 0) {
 			head = new ptr_node<T>(l->head->data);
@@ -324,22 +370,30 @@ template <class T> void ptr_linked_list<T>::copy(ptr_linked_list<T>* l) {
 		ptr_node<T>* n = head;
 		ptr_node<T>* m = l->head;
 		while (length < l->length) {
+
 			if (n->next == nullptr) {
+
+				// If there is no next node, add one
 				n->next = new ptr_node<T>(m->next->data);
 				n->next->prev = n->next;
 				length++;
 				tail = n->next;
 			} else {
-				//n->next->copy(m->next);
-				n->next = m->next;
+
+				// Copy the value from <l> to <this>
+				n->next->copy(m->next);
 			}
 
 			n = n->next;
 			m = m->next;
 		}
+
+	// If <l> is shorter than <this>
 	} else if (length > l->length) {
 		ptr_node<T>* n = nullptr;
 		if (l->length == 0) {
+
+			// Empty <this> of all nodes
 			n = head;
 			while (head != nullptr) {
 				head = head->next;
@@ -348,6 +402,8 @@ template <class T> void ptr_linked_list<T>::copy(ptr_linked_list<T>* l) {
 				length--;
 			}
 		} else {
+
+			// Delete extra nodes from <this>
 			n = tail;
 			while (length > l->length) {
 				tail = tail->prev;
@@ -359,14 +415,27 @@ template <class T> void ptr_linked_list<T>::copy(ptr_linked_list<T>* l) {
 				n = tail;
 				length--;
 			}
+
+			// Copy the rest of the data
 			n = head;
 			ptr_node<T>* m = l->head;
 			while (n != nullptr) {
-				//n->copy(m);
-				n = m;
+				n->copy(m);
 				n = n->next;
 				m = m->next;
 			}
+		}
+
+	// If <this> and <l> have the same length
+	} else {
+
+		// Copy the data node by node
+		ptr_node<T>* n = head;
+		ptr_node<T>* m = l->head;
+		while (n != nullptr) {
+			n->copy(m);
+			n = n->next;
+			m = m->next;
 		}
 	}
 }
