@@ -21,8 +21,8 @@ enum error_type {
 
 struct pgm_error {
 	error_type type;
-	int num_size_args;
-	int num_str_args;
+	int num_size_args; // Defines the size of size_args[]
+	int num_str_args; // Defines the size of str_args[]
 	size_t* size_args;
 	std::string* str_args;
 
