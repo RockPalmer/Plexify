@@ -230,15 +230,14 @@ void doThing() {
 							cout << "For example, if the output variables I wanted to use were called \"apple\", \"pear\", and \"banana\" I would write this:" << endl;
 							cout << endl << "\tapple,pear,banana" << endl << endl;
 							cout << ">> ";
-							cout << ">> ";
 							getline(cin,line);
 							line = trim(line);
 							if (line.compare("") == 0) {
 
 								// Go back to the "get input variables" step
-								delete[] output_vars;
-								output_vars = nullptr;
-								number_outputs = 0;
+								delete[] input_vars;
+								input_vars = nullptr;
+								number_inputs = 0;
 								state = 1;
 							} else {
 								explode(line,",",output_vars,number_outputs,SIZE_MAX);
@@ -321,6 +320,7 @@ void doThing() {
 
 					cout << "File generated successfully!" << endl;
 					printTableInfo(filename,input_vars,output_vars,number_inputs,number_outputs);
+					cout << "You can now open " << filename << " in an excel spreadsheet and fill in the output values you want for all of the output variables in this truth table. When editing any truth table file, keep in mind that the system recognizes '1' as TRUE, '0' as FALSE, and 'x' as DON'T CARE." << endl;
 				}
 
 				// Delete the input and output variables arrays as they are now written into the file
@@ -663,63 +663,23 @@ void explode(string str, string delim, string*& strs, size_t& len, size_t max_si
  * that is in the process of being generated
  */
 void printTableInfo(string filename, string* input_vars, string* output_vars, size_t number_inputs, size_t number_outputs) {
-	size_t str_len = filename.length();
-	string input_string = "";
-	string output_string = "";
-	if (number_inputs != -1) {
+	cout << lineBreak << endl << "Filename: " << filename << endl << "Inputs  : ";
+	if (number_inputs > 0) {
 		for (size_t i = 0; i < number_inputs; i++) {
 			if (i != 0) {
-				input_string += ',';
+				cout << ',';
 			}
-			input_string = input_string + input_vars[i];
-		}
-		size_t g = input_string.length();
-		if (str_len < g) {
-			str_len = g;
+			cout << input_vars[i];
 		}
 	}
-	if (number_outputs != -1) {
+	cout << endl << "Outputs : ";
+	if (number_outputs > 0) {
 		for (size_t i = 0; i < number_outputs; i++) {
 			if (i != 0) {
-				output_string += ',';
+				cout << ',';
 			}
-			output_string = output_string + output_vars[i];
+			cout << output_vars[i];
 		}
-		size_t g = output_string.length();
-		if (str_len < g) {
-			str_len = g;
-		}
-	}
-	size_t buff_len = 0;
-
-	cout << lineBreak << endl;
-	cout << "Filename         :";
-	if (filename.compare("") != 0) {
-		buff_len = str_len - filename.length();
-		for (size_t i = 0; i < buff_len; i++) {
-			cout << " ";
-		}
-		cout << filename;
-	}
-	cout << endl;
-	cout << "Input variables  :";
-	if (number_inputs > 0) {
-		cout << endl;
-		buff_len = str_len - input_string.length();
-		for (size_t i = 0; i < buff_len; i++) {
-			cout << " ";
-		}
-		cout << input_string;
-	}
-	cout << endl;
-	cout << "Output variables :";
-	if (number_outputs > 0) {
-		cout << endl;
-		buff_len = str_len - output_string.length();
-		for (size_t i = 0; i < buff_len; i++) {
-			cout << " ";
-		}
-		cout << output_string;
 	}
 	cout << endl;
 	cout << lineBreak << endl;
