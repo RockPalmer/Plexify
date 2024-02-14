@@ -1616,18 +1616,23 @@ bool can_insert(node<char*>* n, linked_list<char*>* list, size_t len) {
 	int are_redundant;
 	while (m != nullptr) {
 		are_redundant = check_redundant(n->data,m->data,len);
-		switch (are_redundant) {
-			case 1:
-			case 3:
-				return false;
-			case 2:
-				list->pop(m);
-				delete[] m->data;
-				delete m;
-				return true;
+		if (are_redundant == 1 || are_redundant == 3) {
+			return false;
 		}
 		m = m->next;
 	}
+	
+	m = list->head;
+	while (m != nullptr) {
+		are_redundant = check_redundant(n->data,m->data,len);
+		if (are_redundant == 2) {
+			list->pop(m);
+			delete[] m->data;
+			delete m;
+		}
+		m = m->next;
+	}
+
 	return true;
 }
 /** This function iterates through every pair of cases in <l1> and <l2> and, if 2 redundant 
